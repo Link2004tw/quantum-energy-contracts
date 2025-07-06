@@ -1,0 +1,54 @@
+---
+config:
+  theme: forest
+  layout: elk
+---
+flowchart TD
+    A["Start"] -- Solar Farm --> B{"Contract Paused?"}
+    B -- No --> C{"Solar Farm Action?"}
+    B -- Yes --> D["Paused: Wait for Unpause"]
+    D -- Call unpause --> B
+    C -- Add Energy --> E["Request Add Energy"]
+    C -- Authorize --> F["Authorize Party"]
+    C -- Unauthorize --> G["Unauthorize Party"]
+    C -- Revoke All --> H["Revoke All Authorizations"]
+    C -- Batch Revoke --> I["Revoke Authorizations Batch"]
+    C -- Update Receiver --> J["Update Payment Receiver"]
+    C -- Emergency --> K["Pause Contract"]
+    E -- onlyOwner --> L{"kWh &lt;= MAX_KWH_PER_PURCHASE?"}
+    L -- Yes --> M["Store Request, Emit EnergyAddRequested"]
+    L -- No --> N["Revert: InsufficientEnergyAvailable"]
+    M -- Wait 2 min --> O["Confirm Add Energy"]
+    O -- onlyOwner --> P{"Delay Elapsed?"}
+    P -- Yes --> Q["Update availableKWh, Emit EnergyAdded"]
+    P -- No --> R["Revert: Delay Not Elapsed"]
+    F -- onlyOwner --> S{"Valid Party?"}
+    S -- Yes --> T["Add to authorizedParties, Emit Authorized"]
+    S -- No --> U["Revert: InvalidParty"]
+    G -- onlyOwner --> V{"Party Authorized?"}
+    V -- Yes --> W["Remove from authorizedParties, Update List, Emit Unauthorized"]
+    V -- No --> X["Revert: PartyNotAuthorized"]
+    H -- onlyOwner --> Y["Clear authorizedParties except solarFarm, Emit AllAuthorizationsRevoked"]
+    I -- onlyOwner --> Z["Revoke Batch, Emit AuthorizationsBatchRevoked"]
+    J -- onlyOwner --> AA{"Valid Receiver?"}
+    AA -- Yes --> AB["Update paymentReceiver, Emit PaymentReceiverUpdated"]
+    AA -- No --> AC["Revert: InvalidParty"]
+    K -- onlyOwner --> AD["Set Paused, Emit ContractPaused"]
+    A -- Buyer --> AE{"Buyer Authorized?"}
+    AE -- Yes --> AF{"Contract Paused?"}
+    AE -- No --> AG["Revert: Not Authorized"]
+    AF -- No --> AH["Commit Purchase"]
+    AF -- Yes --> D
+    AH -- onlyAuthorizedParties --> AI{"Cooldown Elapsed?"}
+    AI -- Yes --> AJ["Store PurchaseCommitment, Emit EnergyPurchaseCommitted"]
+    AI -- No --> AK["Revert: CommitmentCooldownActive"]
+    AJ -- Within 5 min --> AL["Reveal Purchase"]
+    AL -- onlyAuthorizedParties, nonReentrant --> AM{"Valid kWh, Hash, ETH, Price?"}
+    AM -- Yes --> AN["Update availableKWh, Transfer to paymentReceiver, Store Refunds, Emit EnergyPurchased"]
+    AM -- No --> AO["Revert: InsufficientEnergyAvailable, PaymentAmountTooSmall, PriceFeedStale, or CommitmentExpired"]
+    AN -- Excess ETH --> AP["Withdraw Refunds"]
+    AP -- nonReentrant --> AQ{"Refunds Available?"}
+    AQ -- Yes --> AR["Send ETH, Emit RefundWithdrawn"]
+    AQ -- No --> AS["Revert: No Refunds"]
+    AJ -- After 5 min --> AT["Clear Expired Commitment"]
+    
