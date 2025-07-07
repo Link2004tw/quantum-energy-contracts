@@ -5,11 +5,11 @@ const { time } = require("@nomicfoundation/hardhat-network-helpers");
 describe("EnergyContract Unit Tests", function () {
   let EnergyContract, energyContract, MockV3Aggregator, mockPriceFeed;
   let owner, addr1, addr2, solarFarm;
-  const initialKWh = 10000;
+  const MAX_KWH_PER_PURCHASE = 1000;
   const pricePerKWhUSDCents = 12;
-  const stalenessThreshold = 15 * 60; // 15 minutes in seconds
-  const validPrice = BigInt(2000 * 10 ** 8); // $2000 ETH/USD with 8 decimals
-  const adjustedPrice = BigInt(2000 * 10 ** 8); // Adjusted price for testing
+  //const stalenessThreshold = 15 * 60; // 15 minutes in seconds
+  //const validPrice = BigInt(2000 * 10 ** 8); // $2000 ETH/USD with 8 decimals
+  //const adjustedPrice = BigInt(2000 * 10 ** 8); // Adjusted price for testing
   beforeEach(async function () {
     [owner, addr1, addr2, solarFarm] = await ethers.getSigners();
 
@@ -18,7 +18,6 @@ describe("EnergyContract Unit Tests", function () {
     //console.log("Deploying MockV3Aggregator with args: decimals=8, initialAnswer=", BigInt(2000 * 10**8));
     mockPriceFeed = await MockV3Aggregator.deploy(8, BigInt(2000 * 10 ** 8)); // 8 decimals, $2000 ETH/USD
     await mockPriceFeed.waitForDeployment();
-    //console.log("MockV3Aggregator deployed at:", await mockPriceFeed.getAddress());
 
     // Deploy EnergyContract
     EnergyContract = await ethers.getContractFactory("EnergyContract");
@@ -26,8 +25,6 @@ describe("EnergyContract Unit Tests", function () {
       await mockPriceFeed.getAddress(),
       solarFarm.address
     );
-    await energyContract.waitForDeployment();
-    //console.log("EnergyContract deployed at:", await energyContract.getAddress());
   });
 
   describe("Authorization Management", function () {
@@ -157,12 +154,107 @@ describe("EnergyContract Unit Tests", function () {
       // Setup: addr1 commits to a purchase
       const kWh = 100;
       const nonce = 12345;
-      const commitmentHash = ethers.utils.keccak256(
-        ethers.utils.defaultAbiCoder.encode(["uint256", "uint256", "address"], [kWh, nonce, addr1.address])
+      const commitmentHash = ethers.keccak256(
+        ethers.solidityPacked(
+          ["uint256", "uint256", "address"],
+          [kWh, nonce, addr1.address]
+        )
       );
-      await energyContract.connect(addr1).commitPurchase(commitmentHash);
+      console.log("Commitment hash:", commitmentHash);
+      //await energyContract.connect(solarFarm).authorizeParty(addr1.address);
 
-      
+      await energyContract.connect(solarFarm).authorizeParty(addr1.address);
+      await energyContract.connect(solarFarm).authorizeParty(addr2.address);
+      await energyContract.connect(solarFarm).requestAddEnergy(1000);
+
+      const startBlock = await ethers.provider.getBlock("latest");
+      const addEnergyTimestamp = startBlock.timestamp + 2 * 60 + 1; // 2 minutes + 1 second
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        addEnergyTimestamp,
+      ]);
+      await ethers.provider.send("evm_mine");
+
+      await energyContract
+        .connect(solarFarm)
+        .confirmAddEnergy(MAX_KWH_PER_PURCHASE);
+
+      // Verify energy was added
+      const availableKWh = await energyContract.availableKWh();
+      console.log("Available kWh after setup:", availableKWh.toString());
+      const commitBlock = await ethers.provider.getBlock("latest");
+      const commitTimestamp = commitBlock.timestamp + 1; // Immediately after last block
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        commitTimestamp,
+      ]);
+      await energyContract.connect(addr1).commitPurchase(commitmentHash);
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        commitTimestamp + 1,
+      ]);
+      await energyContract.connect(addr2).commitPurchase(commitmentHash);
+
+      // Cache the ETH price
+      await energyContract.getLatestEthPrice();
+
+      const revealTimestamp = commitTimestamp + 10; // Well within 5 minutes (300 seconds)
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        revealTimestamp,
+      ]);
+
+      // Calculate payment
+      const ethPriceUSD = await energyContract.getCachedEthPrice();
+      const totalCostUSDCents = BigInt(kWh) * BigInt(pricePerKWhUSDCents);
+      const ethPriceUSDInCents = ethPriceUSD / BigInt(10 ** 2);
+      const totalCostWei =
+        (totalCostUSDCents * BigInt(10 ** 18)) / ethPriceUSDInCents;
+      // Test: addr2 tries to reveal addr1's commitment
+      await expect(
+        energyContract
+          .connect(addr2)
+          .revealPurchase(kWh, nonce, { value: totalCostWei })
+      ).to.be.revertedWithCustomError(energyContract, "InvalidCommitment");
+
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        revealTimestamp + 1,
+      ]);
+
+      try {
+        await expect(
+          energyContract
+            .connect(addr1)
+            .revealPurchase(kWh, nonce, { value: totalCostWei })
+        ).to.not.be.revertedWithCustomError(
+          energyContract,
+          "InvalidCommitment"
+        );
+      } catch (error) {
+        console.log("Revert reason for addr1 reveal:", error.message);
+        throw error; // Rethrow to fail the test
+      }
+      // test 3
+      // Test 5: Zero commitment hash
+      await expect(
+        energyContract.connect(addr1).commitPurchase(ethers.ZeroHash)
+      ).to.be.revertedWithCustomError(energyContract, "InvalidCommitmentHash");
+      // Test 6: No commitment exists
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        revealTimestamp + 80,
+      ]);
+      await expect(
+        energyContract
+          .connect(addr1)
+          .revealPurchase(kWh, nonce, { value: totalCostWei })
+      ).to.be.revertedWithCustomError(energyContract, "CommitmentExpired");
+      // Test 7: Expired commitment
+      await ethers.provider.send("evm_increaseTime", [300]); // Advance time to clear cooldown
+      await ethers.provider.send("evm_mine");
+      await energyContract.connect(addr1).commitPurchase(commitmentHash);
+      await ethers.provider.send("evm_increaseTime", [5 * 60 + 1]); // Beyond 5-minute window
+      await ethers.provider.send("evm_mine");
+      await expect(
+        energyContract
+          .connect(addr1)
+          .revealPurchase(kWh, nonce, { value: totalCostWei })
+      ).to.be.revertedWithCustomError(energyContract, "CommitmentExpired");
     });
 
     it("Should validate commitment hashes correctly", async function () {
