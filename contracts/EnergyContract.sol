@@ -187,10 +187,8 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     }
 
     // Revokes authorizations in batches for gas efficiency
-    function revokeAuthorizationsBatch(
-        uint256 startIndex,
-        uint256 batchSize
-    ) external onlyOwner {
+    
+    function revokeAuthorizationsBatch(uint256 startIndex, uint256 batchSize) external onlyOwner {
         if (startIndex >= authorizedPartyList.length || batchSize == 0)
             revert InvalidBatchIndex(startIndex, authorizedPartyList.length);
         uint256 endIndex = startIndex + batchSize;
@@ -200,14 +198,11 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         for (uint256 i = startIndex; i < endIndex; i++) {
             if (authorizedPartyList[i] != solarFarm) {
                 authorizedParties[authorizedPartyList[i]] = false;
-                authorizedPartyList[i] = address(0); // Mark for removal
+                authorizedPartyList[i] = address(0);
                 removedCount++;
             }
         }
-        // Rebuild array to remove marked entries
-        address[] memory newList = new address[](
-            authorizedPartyList.length - removedCount
-        );
+        address[] memory newList = new address[](authorizedPartyList.length - removedCount);
         uint256 newIndex = 0;
         for (uint256 i = 0; i < authorizedPartyList.length; i++) {
             if (authorizedPartyList[i] != address(0)) {
@@ -473,7 +468,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
                         priceLastUpdated,
                         STALENESS_THRESHOLD
                     );
-                }else {
+                } else {
                     return cachedEthPrice; // Return cached value if Chainlink is down
                 }
             } else {

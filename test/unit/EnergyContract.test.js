@@ -42,16 +42,18 @@ describe("EnergyContract Unit Tests", function () {
 
   const revealPurchase = async (sender, kWh, nonce, expectSuccess = true) => {
     const ethPriceUSD = await energyContract.getCachedEthPrice();
+    console.log("ETH Price USD:", ethPriceUSD.toString());
     const totalCostUSDCents = BigInt(kWh) * BigInt(PRICE_PER_KWH_USD_CENTS);
     const ethPriceUSDInCents = ethPriceUSD / BigInt(10 ** 2);
     const totalCostWei =
-      (totalCostUSDCents * BigInt(10 ** 18)) / ethPriceUSDInCents;
+      (totalCostUSDCents * BigInt(10 ** 18)) / ethPriceUSDInCents * BigInt(10 ** 10);
     const revealTimestamp =
       (await ethers.provider.getBlock("latest")).timestamp + 10;
     await ethers.provider.send("evm_setNextBlockTimestamp", [revealTimestamp]);
+    console.log("total cost in wei:", totalCostWei.toString());
     const tx = energyContract
       .connect(sender)
-      .revealPurchase(kWh, nonce ,{ value: totalCostWei });
+      .revealPurchase(kWh, nonce ,{ value: totalCostWei  });
 
     if (expectSuccess) {
       await expect(tx)
