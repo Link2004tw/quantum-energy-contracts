@@ -47,17 +47,6 @@ contract MaliciousContract {
         energyContract.withdrawRefunds();
     }
 
-    // receive() external payable {
-    //     console.log("Receive called with value:", msg.value);
-    //     if (attacking) {
-    //         console.log("Attempting reentrancy on withdrawRefunds");
-    //         try energyContract.withdrawRefunds() {
-    //             console.log("Reentrancy succeeded unexpectedly");
-    //         } catch {
-    //             console.log("Reentrancy failed as expected");
-    //         }
-    //     }
-    // }
 
     receive() external payable {
         console.log("Receive called with value:", msg.value);
