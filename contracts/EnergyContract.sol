@@ -21,7 +21,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     uint256 public constant COMMIT_REVEAL_WINDOW = 5 minutes; // Commitment reveal window
     uint256 public constant COMMIT_COOLDOWN = 5 minutes; // Cooldown between commitments
     uint256 public constant MAX_AUTHORIZED_PARTIES = 100; // Max authorized parties
-    uint256 public constant MAX_GAS_FOR_CALL = 100_000; // Gas limit for external calls
+    uint256 public constant MAX_GAS_FOR_CALL = 5_000_000; // Gas limit for external calls
     //last failure timestamp for Chainlink price feed
     uint256 public lastChainlinkFailure;
 
@@ -255,6 +255,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     function commitPurchase(
         bytes32 _commitmentHash
     ) external onlyAuthorizedParties whenNotPaused {
+        console.log("the sender is: %d", msg.sender);
         if (_commitmentHash == bytes32(0)) revert InvalidCommitmentHash();
         if (block.timestamp < lastCommitTime[msg.sender] + COMMIT_COOLDOWN)
             revert CommitmentCooldownActive(
@@ -273,6 +274,26 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         );
     }
 
+    function calculateRequiredPayment(
+        uint256 _kWh,
+        uint256 _ethPriceUSD
+    ) public pure returns (uint256) {
+        if (_kWh == 0 || _kWh > MAX_KWH_PER_PURCHASE)
+            revert InsufficientEnergyAvailable(_kWh, MAX_KWH_PER_PURCHASE);
+        if (_ethPriceUSD < 100 * 10 ** 8 || _ethPriceUSD > 10000 * 10 ** 8)
+            revert InvalidPriceBounds();
+
+        uint256 totalCostUSDCents = _kWh * PRICE_PER_KWH_USD_CENTS;
+        if (totalCostUSDCents > 2 ** 128) revert("Cost overflow");
+        uint256 ethPriceUSDcents = _ethPriceUSD / 1e2; // Assuming _ethPriceUSD has 8 decimals
+        uint256 totalCostWei = (totalCostUSDCents * 1e18) / ethPriceUSDcents;
+        // Debug output: split into multiple console.log calls to avoid argument limit
+        console.log("totalCostUSDCents:", totalCostUSDCents);
+        console.log("ethPriceUSDcents:", ethPriceUSDcents);
+        console.log("totalCostWei:", totalCostWei);
+        return totalCostWei;
+    }
+
     // Reveals and executes a committed purchase
     function revealPurchase(
         uint256 _kWh,
@@ -282,15 +303,12 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
             revert InsufficientEnergyAvailable(_kWh, availableKWh);
 
         PurchaseCommitment memory commitment = purchaseCommitments[msg.sender];
-        if (commitment.timestamp == 0)
+        if (commitment.timestamp == 0) {
+            //console.log("1");
             revert CommitmentExpired(0, block.timestamp);
+        }
         if (block.timestamp > commitment.timestamp + COMMIT_REVEAL_WINDOW)
             revert CommitmentExpired(commitment.timestamp, block.timestamp);
-            bytes32 commitmentHash = commitment.commitmentHash;
-            bytes32 expectedHash = keccak256(
-            abi.encodePacked(_kWh, _nonce, msg.sender));
-            console.log("Expected hash: %s", bytes32ToString(expectedHash));
-            console.log("Commitment hash: %s", bytes32ToString(commitmentHash));
 
         if (
             keccak256(abi.encodePacked(_kWh, _nonce, msg.sender)) !=
@@ -300,12 +318,15 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         uint256 ethPriceUSD = getLatestEthPrice(); // Updates cache if Chainlink valid, falls back to cache if down
         uint256 totalCostUSDCents = _kWh * PRICE_PER_KWH_USD_CENTS;
         if (totalCostUSDCents > 2 ** 128) revert("Cost overflow");
-        uint256 totalCostWei = (totalCostUSDCents * 10 ** 18) /
-            (ethPriceUSD / 10 ** 2);
+        uint256 totalCostWei = calculateRequiredPayment(
+            _kWh,
+            cachedEthPrice / 10 ** 10
+        );
         if (totalCostWei == 0 || msg.value < totalCostWei)
             revert PaymentAmountTooSmall(msg.value, totalCostWei);
 
         availableKWh -= _kWh;
+
         if (msg.value > totalCostWei)
             pendingRefunds[msg.sender] += msg.value - totalCostWei;
         delete purchaseCommitments[msg.sender];
@@ -323,7 +344,13 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
             value: totalCostWei,
             gas: MAX_GAS_FOR_CALL
         }("");
-        if (!sent) revert PaymentFailed();
+        if (!sent) {
+            console.log(
+                "EnergyContract: PaymentFailed sending to:",
+                paymentReceiver
+            );
+            revert PaymentFailed();
+        }
         emit EnergyPurchased(
             msg.sender,
             solarFarm,
@@ -334,16 +361,33 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         );
     }
 
-    // Withdraws pending refunds
     function withdrawRefunds() external whenNotPaused nonReentrant {
+        console.log("EnergyContract: withdrawRefunds called by:", msg.sender);
         uint256 amount = pendingRefunds[msg.sender];
-        if (amount == 0) revert NoRefundsAvailable();
+        if (amount == 0) {
+            console.log("EnergyContract: NoRefundsAvailable for:", msg.sender);
+            revert NoRefundsAvailable();
+        }
         pendingRefunds[msg.sender] = 0;
+        console.log("Sending refund of", amount, "to", msg.sender);
+
         (bool sent, ) = payable(msg.sender).call{
             value: amount,
             gas: MAX_GAS_FOR_CALL
         }("");
-        if (!sent) revert PaymentFailed();
+        if (!sent) {
+            console.log(
+                "EnergyContract: PaymentFailed sending to:",
+                msg.sender
+            );
+            revert PaymentFailed();
+        }
+        console.log(
+            "EnergyContract: RefundWithdrawn for:",
+            msg.sender,
+            "amount:",
+            amount
+        );
         emit RefundWithdrawn(msg.sender, amount, block.timestamp);
     }
 
@@ -401,6 +445,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
 
         // Check if Chainlink data is valid
         bool isChainlinkValid = true;
+        console.logInt(price);
         if (price <= 0) {
             isChainlinkValid = false; // Invalid price
         } else if (updatedAt <= block.timestamp - STALENESS_THRESHOLD) {
@@ -420,22 +465,26 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
             emit PriceCacheUpdated(adjustedPrice, block.timestamp);
             return adjustedPrice;
         } else {
-            // Chainlink down: check if cached value is stale
-            if (block.timestamp > priceLastUpdated + STALENESS_THRESHOLD) {
-                revert PriceFeedStale(priceLastUpdated, STALENESS_THRESHOLD);
-            }
-            // Return cached value if available
+            console.log(cachedEthPrice == 0);
             if (cachedEthPrice != 0) {
-                return cachedEthPrice;
+                console.log("1");
+                if (block.timestamp > priceLastUpdated + STALENESS_THRESHOLD) {
+                    revert PriceFeedStale(
+                        priceLastUpdated,
+                        STALENESS_THRESHOLD
+                    );
+                }else {
+                    return cachedEthPrice; // Return cached value if Chainlink is down
+                }
+            } else {
+                revert InvalidEthPrice();
             }
-            // No valid cache: revert
-            revert InvalidEthPrice();
         }
     }
 
     function bytes32ToString(
         bytes32 _bytes32
-    ) public pure returns (string memory) {
+    ) internal pure returns (string memory) {
         // Initialize a string with 66 characters: "0x" + 64 hex digits
         bytes memory hexString = new bytes(66);
 
@@ -456,22 +505,6 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         }
 
         return string(hexString);
-    }
-
-    function calculateRequiredPayment(
-        uint256 _kWh,
-        uint256 _ethPriceUSD
-    ) external pure returns (uint256) {
-        if (_kWh == 0 || _kWh > MAX_KWH_PER_PURCHASE)
-            revert InsufficientEnergyAvailable(_kWh, MAX_KWH_PER_PURCHASE);
-        if (_ethPriceUSD < 100 * 10 ** 8 || _ethPriceUSD > 10000 * 10 ** 8)
-            revert InvalidPriceBounds();
-
-        uint256 totalCostUSDCents = _kWh * PRICE_PER_KWH_USD_CENTS;
-        if (totalCostUSDCents > 2 ** 128) revert("Cost overflow");
-        uint256 ethPriceUSDcents = _ethPriceUSD / 1e2; // Assuming _ethPriceUSD has 8 decimals
-        uint256 totalCostWei = (totalCostUSDCents * 1e18) / ethPriceUSDcents;
-        return totalCostWei;
     }
 
     // Pauses the contract
