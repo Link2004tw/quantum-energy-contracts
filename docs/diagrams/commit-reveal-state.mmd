@@ -1,0 +1,31 @@
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Committed: commitPurchase(commitmentHash)
+    Committed --> InvalidHash: Invalid commitmentHash
+    InvalidHash --> [*]: Revert InvalidCommitmentHash
+    Committed --> CooldownActive: COMMIT_COOLDOWN not elapsed
+    CooldownActive --> [*]: Revert CommitmentCooldownActive
+    Committed --> RevealPending: Valid commitmentHash
+    RevealPending --> Expired: COMMIT_REVEAL_WINDOW elapsed
+    Expired --> Cleared: clearExpiredCommitment
+    Cleared --> [*]: Emit CommitmentCleared
+    RevealPending --> InvalidCommitment: revealPurchase(_kWh, _nonce) invalid
+    InvalidCommitment --> [*]: Revert InvalidCommitment
+    RevealPending --> PriceCheck: Valid _kWh, _nonce
+    PriceCheck --> PriceInvalid: Chainlink price invalid
+    PriceInvalid --> CachedPriceValid: cachedEthPrice valid
+    PriceInvalid --> PriceStale: cachedEthPrice stale
+    PriceStale --> [*]: Revert PriceFeedStale
+    CachedPriceValid --> PaymentCheck
+    PriceCheck --> PriceValid: Chainlink price valid
+    PriceValid --> PaymentCheck: Update cachedEthPrice
+    PaymentCheck --> InsufficientPayment: msg.value < totalCostWei
+    InsufficientPayment --> [*]: Revert PaymentAmountTooSmall
+    PaymentCheck --> PurchaseExecuted: Sufficient payment
+    PurchaseExecuted --> RefundPending: Overpayment
+    RefundPending --> RefundWithdrawn: withdrawRefunds
+    RefundWithdrawn --> [*]: Emit RefundWithdrawn
+    PurchaseExecuted --> PaymentFailed: Transfer to paymentReceiver fails
+    PaymentFailed --> [*]: Revert PaymentFailed
+    PurchaseExecuted --> Completed: Transfer to paymentReceiver succeeds
+    Completed --> [*]: Emit EnergyPurchased
