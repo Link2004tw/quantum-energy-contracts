@@ -1,8 +1,9 @@
 # Development Setup Guide for EnergyContract
 
-This guide provides a comprehensive setup for developing, testing, and deploying the `EnergyContract` smart contract using Hardhat with the `@nomicfoundation/hardhat-toolbox` plugin and the Remix Solidity IDE with its AI-powered security features. It covers IDE configuration, dependencies, local blockchain setup, testing environment (including unit, integration, and security tests), deployment process, and common troubleshooting issues to ensure developers can get productive quickly.
+This guide provides a comprehensive setup for developing, testing, and deploying the `EnergyContract` smart contract using Hardhat with the `@nomicfoundation/hardhat-toolbox` plugin and the Remix Solidity IDE with AI-powered security features. It covers IDE configuration, dependencies, local blockchain setup, testing environment, deployment process, professional QA process, and common troubleshooting issues to ensure developers can get productive quickly.
 
 ## IDE Configuration
+
 ### Recommended IDEs
 
 - **Visual Studio Code (VS Code)**: A lightweight, extensible IDE for Solidity and JavaScript development, ideal for Hardhat integration and local testing.
@@ -43,7 +44,7 @@ Add the following to your VS Code `settings.json` (accessed via `File > Preferen
 
 - Ensures Solidity compiler version matches the contract (`^0.8.30`).
 - Enables auto-formatting with Prettier for Solidity and JavaScript files.
-- Associates `.sol` files with the Solidity extension.
+- Associates `.sol` files with Solidity.
 
 ### Remix Setup and AI Features
 
@@ -57,19 +58,19 @@ Remix is a browser-based IDE that simplifies Solidity development and provides p
     
     - **Solidity Compiler**: In the "Solidity Compiler" plugin, select version `0.8.30` to match the contract's `pragma solidity ^0.8.30`.
     - **Environment**: Use "JavaScript VM" for quick testing or connect to a Hardhat node (`http://127.0.0.1:8545`) via "Injected Web3" or "Web3 Provider" for local blockchain testing.
-    - **File Explorer**: Upload or create `EnergyContract.sol`, `MockV3Aggregator.sol`, and `MaliciousContract.sol` in the Remix workspace.
+    - **File Explorer**: Upload or create `EnergyContract.sol`, `MockV3Aggregator.sol`, and `MaliciousContract.sol`.
 3. **AI-Powered Security Analysis**:
     
-    - **Remix Static Analysis**: Activate the "Solidity Static Analysis" plugin in Remix. Run it on `EnergyContract.sol` to detect common vulnerabilities (e.g., reentrancy, unchecked return values, gas limit issues).
-    - **AI Features**: Remix includes experimental AI-driven code analysis (via plugins like "Code Analysis" or third-party integrations). Enable the AI plugin (if available in your Remix version) to:
-        - Identify potential security threats (e.g., reentrancy risks in `revealPurchase`, `withdrawRefunds`).
-        - Suggest code optimizations for gas efficiency.
-        - Detect logical errors in functions like `commitPurchase` or `calculateRequiredPayment`.
-    - **Usage**: After enabling the AI plugin, select `EnergyContract.sol` and run the analysis. Review the generated report for warnings about reentrancy, access control, or arithmetic issues, and cross-reference with the security test suite (`test/security/SecurityTests.test.js`).
-    - **Limitations**: AI features are experimental and may not catch all edge cases. Combine with manual testing and static analysis for comprehensive coverage.
+    - **Remix Static Analysis**: Activate the "Solidity Static Analysis" plugin to detect vulnerabilities (e.g., reentrancy in `revealPurchase`, `withdrawRefunds`, unchecked external calls).
+    - **AI Features**: Use Remix's experimental AI-driven code analysis (via plugins like "Code Analysis" or third-party integrations) to:
+        - Identify security threats (e.g., reentrancy, access control issues, arithmetic overflows).
+        - Suggest gas optimizations for functions like `calculateRequiredPayment`.
+        - Detect logical errors in the commit-reveal process.
+    - **Usage**: Run AI analysis on `EnergyContract.sol` and review reports for warnings about reentrancy, access control, or price feed issues. Cross-reference with `test/security/SecurityTests.test.js`.
+    - **Limitations**: AI features are experimental and may miss edge cases. Combine with static analysis and Hardhat tests for comprehensive coverage.
 4. **Testing in Remix**:
     
-    - Use the "Solidity Unit Testing" plugin to write and run simple tests directly in Remix, complementing Hardhat tests.
+    - Use the "Solidity Unit Testing" plugin to write and run simple tests, complementing Hardhat tests.
     - Deploy contracts to the JavaScript VM or Hardhat node to test interactions (e.g., `authorizeParty`, `commitPurchase`).
 
 ## Required Dependencies and Versions
@@ -110,6 +111,7 @@ Remix is a browser-based IDE that simplifies Solidity development and provides p
     ```bash
     npm install --save-dev @openzeppelin/contracts@5.0.2
     ```
+    
 
 ### Chainlink Contracts
 
@@ -126,15 +128,16 @@ Remix is a browser-based IDE that simplifies Solidity development and provides p
 - **dotenv**: v16.4.5 (for managing environment variables).
     
     ```bash
-    npm install --save-dev dotenv
+    npm install --save-dev dotenv@16.4.5
     ```
     
 - **chai**: v4.5.0 (for testing assertions, included via `hardhat-toolbox`).
     
     ```bash
-    npm install --save-dev chai
+    npm install --save-dev chai@4.5.0
     ```
     
+
 ### Project Setup
 
 For Hardhat users, initialize a Hardhat project:
@@ -273,7 +276,7 @@ Remix users can upload these files to the Remix File Explorer or create them dir
 
 ### Contract Dependencies
 
-- **EnergyContract.sol**: The main smart contract for energy trading.
+- **EnergyContract.sol**: The main smart contract for energy trading, implementing `Ownable`, `Pausable`, `ReentrancyGuard`, and Chainlink's `AggregatorV3Interface`.
 - **MockV3Aggregator.sol**: A mock Chainlink price feed for local testing, provided by `@chainlink/contracts`. Example implementation:
     
     ```solidity
@@ -372,7 +375,7 @@ The test suites use Mocha and Chai (via `hardhat-toolbox`) for assertions, with 
     
     - Tests individual functions: authorization management (`authorizeParty`, `unAuthorizeParty`), price calculations (`calculateRequiredPayment`, `getLatestEthPrice`), commit-reveal security (`commitPurchase`, `revealPurchase`), and pull-based payments (`withdrawRefunds`).
     - Covers edge cases: duplicate authorizations, invalid commitment hashes, price feed failures, and commitment cooldown.
-    - Note: The provided test suite references a `maxEthPriceUSD` parameter in `revealPurchase`, which is not present in the API documentation. This suggests a potential contract update or test inconsistency.
+    - Note: The provided test suite references a `maxEthPriceUSD` parameter in `revealPurchase`, which is not present in `EnergyContract.sol`. This suggests a potential contract update or test inconsistency.
 2. **Integration Tests** (`test/integration/FullFlow.test.js`):
     
     - Tests the complete purchase flow: `authorizeParty`, `requestAddEnergy`, `confirmAddEnergy`, `commitPurchase`, `revealPurchase`.
@@ -508,6 +511,105 @@ Replace `<CONTRACT_ADDRESS>`, `<PRICE_FEED_ADDRESS>`, and `<SOLAR_FARM_ADDRESS>`
 
 For Remix users, use the "Contract Verification" plugin to verify the contract on Etherscan, providing the same constructor arguments.
 
+## Professional QA Process
+
+The QA process for `EnergyContract` is designed to ensure robustness, security, and reliability through comprehensive testing strategies. Below are answers to key testing strategy questions, addressing critical functions, potential attacks, price feed reliability, network congestion, and payment handling.
+
+### 1. What's the most critical function to test first?
+
+The **most critical function** to test first is `revealPurchase(uint256 _kWh, uint256 _nonce)`. This function is central to the contract’s core functionality, as it:
+
+- Finalizes energy purchases by validating commitments (`keccak256(abi.encodePacked(_kWh, _nonce, msg.sender))` against `commitmentHash`).
+- Handles ETH payments (`msg.value >= totalCostWei`), deducts `availableKWh`, and transfers funds to `paymentReceiver`.
+- Interacts with the Chainlink price feed (`getLatestEthPrice`) and updates `cachedEthPrice`.
+- Uses `nonReentrant` to prevent reentrancy attacks and checks `COMMIT_REVEAL_WINDOW` for commitment validity.
+
+**Why it’s critical**:
+
+- It processes financial transactions, making it a prime target for attacks (e.g., reentrancy, price manipulation).
+- It relies on external data (Chainlink price feed), introducing potential failure points (e.g., stale or invalid prices).
+- Errors in this function could lead to incorrect energy allocation, payment failures, or loss of funds.
+
+**Testing approach**:
+
+- **Unit Tests**: Verify commitment validation, payment calculations (`calculateRequiredPayment`), and `availableKWh` updates. Test edge cases (e.g., zero `_kWh`, invalid `_nonce`, insufficient `msg.value`).
+- **Security Tests**: Use `MaliciousContract.sol` to attempt reentrancy attacks (e.g., via `attackRevealPurchase`). Test with invalid/stale Chainlink prices (`PriceFeedStale`, `InvalidPriceBounds`).
+- **Integration Tests**: Simulate the full flow (`commitPurchase` → `revealPurchase`) with valid and invalid inputs.
+- **Remix Analysis**: Run static analysis and AI-driven checks to detect logical errors or vulnerabilities in payment logic.
+
+### 2. What attack would you try if you wanted to steal energy or ETH?
+
+To steal energy or ETH, the most likely attack vector would be a **reentrancy attack** targeting the `revealPurchase` or `withdrawRefunds` functions, as both handle ETH transfers. The attack would involve:
+
+- **Attack Vector**: Deploy a malicious contract (like `MaliciousContract.sol`) that calls `revealPurchase` or `withdrawRefunds` and re-enters the contract via its `receive` function to repeatedly drain funds before state updates.
+- **Example Attack**:
+    1. An attacker commits a valid purchase (`commitPurchase`) with a correct `commitmentHash`.
+    2. In `revealPurchase`, the contract transfers ETH to `paymentReceiver` (potentially the attacker’s contract) before updating `availableKWh` or clearing `purchaseCommitments`.
+    3. The attacker’s `receive` function re-calls `revealPurchase` or `withdrawRefunds`, attempting to drain `pendingRefunds` or bypass energy deductions.
+- **Mitigation in Contract**: The `nonReentrant` modifier (from `ReentrancyGuard`) prevents reentrancy by locking the function during execution. The contract also uses a pull-based payment system (`withdrawRefunds`) to minimize direct ETH transfers.
+- **Testing Strategy**:
+    - Deploy `MaliciousContract.sol` and simulate reentrancy via `attackRevealPurchase` and `attackWithdrawRefunds` in `test/security/SecurityTests.test.js`.
+    - Verify that `nonReentrant` reverts reentrant calls with `ReentrancyGuard: reentrant call`.
+    - Test edge cases: multiple rapid calls to `withdrawRefunds`, large overpayments to inflate `pendingRefunds`.
+    - Use Remix’s static analysis to confirm reentrancy protection.
+
+### 3. How do you ensure price feed reliability?
+
+Price feed reliability is critical for accurate payment calculations in `revealPurchase`. The contract uses Chainlink’s `AggregatorV3Interface` with the following mechanisms to ensure reliability:
+
+- **Chainlink Price Validation**: The `getLatestEthPrice` function checks:
+    - Price is positive (`price > 0`).
+    - Data is not stale (`updatedAt > block.timestamp - STALENESS_THRESHOLD`).
+    - Round is complete (`answeredInRound >= roundId`).
+    - Price is within bounds (`100 * 10^8 <= price <= 10000 * 10^8`).
+- **Cached Price Fallback**: If Chainlink data is invalid, the contract uses `cachedEthPrice` (updated by `getLatestEthPrice`) unless it’s stale (`block.timestamp > priceLastUpdated + STALENESS_THRESHOLD`), reverting with `PriceFeedStale`.
+- **Event Emission**: `PriceCacheUpdated` logs price updates for transparency.
+
+**Testing Strategy**:
+
+- **Unit Tests**: Test `getLatestEthPrice` with valid, stale, negative, and out-of-bounds prices using `MockV3Aggregator.sol`. Verify fallback to `cachedEthPrice` and `PriceFeedStale` reverts.
+- **Integration Tests**: Simulate Chainlink failures in `revealPurchase` and confirm correct use of `cachedEthPrice`.
+- **Security Tests**: Attempt price manipulation by updating `MockV3Aggregator` with invalid prices and verify `InvalidPriceBounds` reverts.
+- **Remix Analysis**: Use AI-driven analysis to check for price feed dependency issues. Run static analysis to detect unchecked external calls.
+- **Monitoring**: In production, monitor `lastChainlinkFailure` and `PriceCacheUpdated` events to detect price feed issues. Consider multi-oracle integration for enhanced reliability in future updates.
+
+### 4. What happens during network congestion?
+
+Network congestion (e.g., high gas prices, delayed transactions) can impact `EnergyContract` operations, particularly time-sensitive functions like `confirmAddEnergy` and `revealPurchase`. The contract’s design mitigates some risks:
+
+- **Time-Sensitive Operations**:
+    - `confirmAddEnergy`: Requires `ADD_ENERGY_DELAY` (2 minutes) to elapse. Congestion may delay confirmation, but the delay ensures security without breaking functionality.
+    - `revealPurchase`: Must be called within `COMMIT_REVEAL_WINDOW` (5 minutes). Congestion could cause commitments to expire, reverting with `CommitmentExpired`.
+- **Gas Limits**: External calls (e.g., ETH transfers to `paymentReceiver`) use `MAX_GAS_FOR_CALL` (5,000,000), reducing the risk of out-of-gas errors during congestion.
+- **Pausable**: The owner can pause the contract (`pause`) during extreme congestion to prevent failed transactions or unsafe operations.
+
+**Testing Strategy**:
+
+- **Simulate Congestion**: Use Hardhat’s `hardhat-network-helpers` to increase block times (`evm_increaseTime`) and test `CommitmentExpired` and `DelayNotElapsed` reverts.
+- **Gas Tests**: Deploy on a testnet (e.g., Sepolia) with simulated high gas prices to verify `MAX_GAS_FOR_CALL` sufficiency. Test with low gas limits to trigger `PaymentFailed`.
+- **Integration Tests**: Test full flows under delayed conditions, ensuring state consistency (e.g., `availableKWh`, `pendingRefunds`).
+- **Remix Testing**: Use JavaScript VM to simulate delayed transactions by advancing block timestamps.
+- **Mitigation**: Document the need for users to set appropriate gas prices during congestion. Consider adding a `clearExpiredCommitment` test to handle expired commitments gracefully.
+
+### 5. How do you handle partial payments or overpayments?
+
+The `EnergyContract` handles partial payments and overpayments in `revealPurchase` as follows:
+
+- **Partial Payments**: If `msg.value < totalCostWei` (calculated via `calculateRequiredPayment`), the transaction reverts with `PaymentAmountTooSmall`. This ensures no energy is allocated without full payment.
+- **Overpayments**: If `msg.value > totalCostWei`, the excess ETH is stored in `pendingRefunds[msg.sender]`. Users can retrieve overpayments via `withdrawRefunds`, which is secured by `nonReentrant` and reverts with `NoRefundsAvailable` if no funds are available.
+- **Security Measures**:
+    - The contract clears `purchaseCommitments` after a successful `revealPurchase` to prevent double-spending.
+    - ETH transfers to `paymentReceiver` and refunds use `MAX_GAS_FOR_CALL` to mitigate out-of-gas risks.
+    - The `PriceCacheUpdated` event logs price changes to ensure transparency in payment calculations.
+
+**Testing Strategy**:
+
+- **Unit Tests**: Test `revealPurchase` with `msg.value` below, equal to, and above `totalCostWei`. Verify `PaymentAmountTooSmall` reverts and `pendingRefunds` updates for overpayments.
+- **Security Tests**: Use `MaliciousContract.sol` to attempt reentrancy on `withdrawRefunds` with large overpayments. Verify `nonReentrant` protection.
+- **Integration Tests**: Simulate a full purchase flow with overpayments, followed by `withdrawRefunds`, and check `RefundWithdrawn` events.
+- **Remix Analysis**: Run static analysis to verify safe ETH transfers and AI-driven checks for refund logic errors.
+- **Edge Cases**: Test zero `msg.value`, maximum `msg.value`, and multiple overpayment withdrawals to ensure state consistency.
+
 ## Common Troubleshooting Issues
 
 ### 1. Compilation Errors
@@ -542,7 +644,7 @@ For Remix users, use the "Contract Verification" plugin to verify the contract o
 - **Issue**: `PriceFeedStale` or `InvalidEthPrice` during `revealPurchase`.
     - **Solution**: Update `MockV3Aggregator` with a valid price and recent `updatedAt`. Ensure the cache is initialized via `getLatestEthPrice`. In Remix, test price feed interactions in the JavaScript VM.
 - **Issue**: `PaymentFailed` during `revealPurchase` or `withdrawRefunds`.
-    - **Solution**: Verify `paymentReceiver` is a valid EOA. Check `MAX_GAS_FOR_CALL` is sufficient in the contract.
+    - **Solution**: Verify `paymentReceiver` is a valid EOA (checked in `updatePaymentReceiver`). Check `MAX_GAS_FOR_CALL` is sufficient in the contract.
 - **Issue**: Tests fail due to mismatched constants.
     - **Solution**: Fetch constants (`MAX_KWH_PER_PURCHASE`, `PRICE_PER_KWH_USD_CENTS`) from the contract instead of hardcoding.
 
@@ -564,4 +666,4 @@ For Remix users, use the "Contract Verification" plugin to verify the contract o
 
 ## Conclusion
 
-This setup guide provides a complete environment for developing, testing, and deploying the `EnergyContract` smart contract using Hardhat with `@nomicfoundation/hardhat-toolbox` and Remix Solidity IDE with AI-powered security features. It includes instructions for configuring VS Code and Remix, installing dependencies, setting up a local Hardhat blockchain, running unit, integration, and security tests, and deploying to Sepolia. The test suites cover core functionality, security, and edge cases, with helper functions to streamline test writing. Remix's AI and static analysis tools complement Hardhat tests for enhanced security. Troubleshooting tips address common issues to minimize downtime.
+This setup guide provides a complete environment for developing, testing, and deploying the `EnergyContract` smart contract using Hardhat with `@nomicfoundation/hardhat-toolbox` and Remix Solidity IDE with AI-powered security features. It includes instructions for configuring VS Code and Remix, installing dependencies, setting up a local Hardhat blockchain, running unit, integration, and security tests, and deploying to local and testnet environments. The professional QA process ensures robustness by addressing critical functions, potential attacks, price feed reliability, network congestion, and payment handling. Troubleshooting tips address common issues to minimize downtime.
