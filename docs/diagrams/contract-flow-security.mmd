@@ -1,43 +1,48 @@
-graph TD
-    A[Start] --> B{Paused?}
-    B -->|Yes| C[Revert: Paused]
-    B -->|No| D[SolarFarm: requestAddEnergy(_kWh)]
-    D -->|Ownable| E{Valid kWh?}
-    E -->|No| F[Revert: InsufficientEnergyAvailable]
-    E -->|Yes| G{Delay elapsed?}
-    G -->|No| H[Revert: DelayNotElapsed]
-    G -->|Yes| I[SolarFarm: confirmAddEnergy(_kWh)]
-    I --> J[AuthorizedParty: commitPurchase(commitmentHash)]
-    J -->|onlyAuthorizedParties| K{Valid hash?}
-    K -->|No| L[Revert: InvalidCommitmentHash]
-    K -->|Yes| M{Cooldown elapsed?}
-    M -->|No| N[Revert: CommitmentCooldownActive]
-    M -->|Yes| O[Store commitment]
-    O --> P[AuthorizedParty: revealPurchase(_kWh, _nonce)]
-    P -->|nonReentrant| Q{Valid commitment?}
-    Q -->|No| R[Revert: InvalidCommitment]
-    Q -->|Yes| S{Within COMMIT_REVEAL_WINDOW?}
-    S -->|No| T[Revert: CommitmentExpired]
-    S -->|Yes| U{Price valid?}
-    U -->|No| V{Valid cached price?}
-    V -->|No| W[Revert: PriceFeedStale]
-    V -->|Yes| X[Use cachedEthPrice]
-    U -->|Yes| Y[Update cachedEthPrice]
-    Y --> Z{Sufficient payment?}
+---
+config:
+  theme: redux-dark
+  layout: fixed
+---
+flowchart TD
+    A["Start"] --> B{"Paused?"}
+    B -- Yes --> C{"Revert: Paused"}
+    B -- No --> D{"SolarFarm: requestAddEnergy (kWh)"}
+    D -- Ownable --> E{"Valid kWh?"}
+    E -- No --> F["Revert: InsufficientEnergyAvailable"]
+    E -- Yes --> G{"Delay elapsed?"}
+    G -- No --> H["Revert: DelayNotElapsed"]
+    G -- Yes --> I["SolarFarm: confirmAddEnergy(_kWh)"]
+    I --> J["AuthorizedParty: commitPurchase(commitmentHash)"]
+    J -- onlyAuthorizedParties --> K{"Valid hash?"}
+    K -- No --> L["Revert: InvalidCommitmentHash"]
+    K -- Yes --> M{"Cooldown elapsed?"}
+    M -- No --> N["Revert: CommitmentCooldownActive"]
+    M -- Yes --> O["Store commitment"]
+    O --> P["AuthorizedParty: revealPurchase(_kWh, _nonce)"]
+    P -- nonReentrant --> Q{"Valid commitment?"}
+    Q -- No --> R["Revert: InvalidCommitment"]
+    Q -- Yes --> S{"Within COMMIT_REVEAL_WINDOW?"}
+    S -- No --> T["Revert: CommitmentExpired"]
+    S -- Yes --> U{"Price valid?"}
+    U -- No --> V{"Valid cached price?"}
+    V -- No --> W["Revert: PriceFeedStale"]
+    V -- Yes --> X["Use cachedEthPrice"]
+    U -- Yes --> Y["Update cachedEthPrice"]
+    Y --> Z{"Sufficient payment?"}
     X --> Z
-    Z -->|No| AA[Revert: PaymentAmountTooSmall]
-    Z -->|Yes| AB{Overpayment?}
-    AB -->|Yes| AC[Store in pendingRefunds]
-    AB -->|No| AD[Execute purchase]
+    Z -- No --> AA["Revert: PaymentAmountTooSmall"]
+    Z -- Yes --> AB{"Overpayment?"}
+    AB -- Yes --> AC["Store in pendingRefunds"]
+    AB -- No --> AD["Execute purchase"]
     AC --> AD
-    AD -->|Deduct availableKWh| AE{Transfer to paymentReceiver}
-    AE -->|Success| AF[Emit EnergyPurchased]
-    AE -->|Failure| AG[Revert: PaymentFailed]
-    AF --> AH[Store transaction]
-    AH --> AI[AuthorizedParty: withdrawRefunds]
-    AI -->|nonReentrant| AJ{Refunds available?}
-    AJ -->|No| AK[Revert: NoRefundsAvailable]
-    AJ -->|Yes| AL{Transfer refund}
-    AL -->|Success| AM[Emit RefundWithdrawn]
-    AL -->|Failure| AN[Revert: PaymentFailed]
-    AM --> AO[End]
+    AD -- Deduct availableKWh --> AE{"Transfer to paymentReceiver"}
+    AE -- Success --> AF["Emit EnergyPurchased"]
+    AE -- Failure --> AG["Revert: PaymentFailed"]
+    AF --> AH["Store transaction"]
+    AH --> AI["AuthorizedParty: withdrawRefunds"]
+    AI -- nonReentrant --> AJ{"Refunds available?"}
+    AJ -- No --> AK["Revert: NoRefundsAvailable"]
+    AJ -- Yes --> AL{"Transfer refund"}
+    AL -- Success --> AM["Emit RefundWithdrawn"]
+    AL -- Failure --> AN["Revert: PaymentFailed"]
+    AM --> AO["End"]
