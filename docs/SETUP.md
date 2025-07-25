@@ -1,9 +1,9 @@
 Development Setup Guide for EnergyContract
-This guide provides a comprehensive setup for developing, testing, and deploying the EnergyContract smart contract using Hardhat with the @nomicfoundation/hardhat-toolbox plugin and the Remix Solidity IDE with AI-powered security features. It covers IDE configuration, dependencies, local blockchain setup, testing environment, deployment process, professional QA process, common troubleshooting issues, and Firebase setup to ensure developers can get productive quickly.
+This guide provides a comprehensive setup for developing, testing, and deploying the EnergyContract smart contract using Hardhat with the @nomicfoundation/hardhat-toolbox plugin and the Remix Solidity IDE with AI-powered security features. It also covers setting up a Next.js frontend in the solarfarm_ui directory with Firebase for authentication and Realtime Database. The guide includes IDE configuration, dependencies, local blockchain setup, testing environment, Firebase and Next.js setup, deployment process, professional QA process, and common troubleshooting issues to ensure developers can get productive quickly.
 IDE Configuration
 Recommended IDEs
 
-Visual Studio Code (VS Code): A lightweight, extensible IDE for Solidity and JavaScript development, ideal for Hardhat integration and local testing.
+Visual Studio Code (VS Code): A lightweight, extensible IDE for Solidity, JavaScript, and TypeScript development, ideal for Hardhat, Next.js, and Firebase integration.
 Remix Solidity IDE: A web-based IDE for Solidity development, offering AI-powered security analysis, static analysis, and easy contract compilation and deployment. Access at remix.ethereum.org.
 
 VS Code Extensions
@@ -11,9 +11,10 @@ For developers using VS Code, install the following extensions:
 
 Solidity by Juan Blanco (juanblanco.solidity): Provides syntax highlighting, code completion, and linting for Solidity.
 Prettier (esbenp.prettier-vscode): Formats code for consistency (supports Solidity with a plugin).
-ESLint (dbaeumer.vscode-eslint): Lints JavaScript/TypeScript files used in Hardhat scripts and tests.
+ESLint (dbaeumer.vscode-eslint): Lints JavaScript/TypeScript files used in Hardhat scripts, tests, and Next.js.
 Hardhat (nomicfoundation.hardhat-vscode): Integrates Hardhat tasks and debugging, leveraging hardhat-toolbox.
 DotENV (mikestead.dotenv): Supports .env file syntax for environment variables.
+Next.js (unvs.next-js): Optional, provides Next.js-specific snippets and support.
 
 VS Code Settings
 Add the following to your VS Code settings.json (accessed via File > Preferences > Settings or Ctrl+,):
@@ -29,6 +30,9 @@ Add the following to your VS Code settings.json (accessed via File > Preferences
   "[javascript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
   "files.associations": {
     "*.sol": "solidity"
   }
@@ -36,7 +40,7 @@ Add the following to your VS Code settings.json (accessed via File > Preferences
 
 
 Ensures Solidity compiler version matches the contract (^0.8.30).
-Enables auto-formatting with Prettier for Solidity and JavaScript files.
+Enables auto-formatting with Prettier for Solidity, JavaScript, and TypeScript files.
 Associates .sol files with Solidity.
 
 Remix Setup and AI Features
@@ -414,13 +418,13 @@ Use environment variables in the frontend:
 Install dotenv in solarfarm_ui:npm install dotenv@16.4.5
 
 
-Create solarfarm_ui/.env:REACT_APP_FIREBASE_API_KEY=your-api-key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your-auth-domain.firebaseapp.com
-REACT_APP_FIREBASE_DATABASE_URL=https://your-database-name.firebaseio.com
-REACT_APP_FIREBASE_PROJECT_ID=your-project-id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your-storage-bucket.appspot.com
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
-REACT_APP_FIREBASE_APP_ID=your-app-id
+Create solarfarm_ui/.env:NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-auth-domain.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://your-database-name.firebaseio.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-storage-bucket.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
 
 
 Update .gitignore:solarfarm_ui/.env
@@ -431,13 +435,13 @@ import { getAuth } from "firebase/auth";
 import { getDatabase } from "firebase/database";
 
 const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  databaseURL: process.env.REACT_APP_FIREBASE_DATABASE_URL,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 };
 
 const app = initializeApp(firebaseConfig);
@@ -446,15 +450,11 @@ const database = getDatabase(app);
 export { app, auth, database };
 
 
-For React apps, ensure your build tool (e.g., Create React App) supports REACT_APP_ prefixed variables.
+Note: Next.js requires NEXT_PUBLIC_ prefix for environment variables exposed to the browser.
 
 
 Build and Test:
-Run the frontend locally:cd solarfarm_ui
-npm start
-
-
-Test authentication (e.g., sign-in, sign-up) and Realtime Database operations (e.g., read/write data).
+Run the frontend locally (see Next.js Setup below for details).
 
 
 
@@ -519,13 +519,316 @@ Solution: Check Firebase security rules and ensure the user is authenticated. Up
 
 
 Issue: Environment variables not loading in frontend.
-Solution: Ensure REACT_APP_ prefix is used and the build tool supports .env files. Restart the development server after updating .env.
+Solution: Ensure NEXT_PUBLIC_ prefix is used and the build tool supports .env files. Restart the development server after updating .env.
+
+
+
+Next.js Setup for Frontend
+Next.js is used to build the solarfarm_ui frontend, providing a modern React framework with server-side rendering, static site generation, and API routes, integrated with Firebase for authentication and Realtime Database. This section guides you through setting up a Next.js project in the solarfarm_ui directory, configuring it with Firebase, and ensuring secure handling of sensitive credentials.
+1. Initialize a Next.js Project
+
+Create Next.js App:
+Navigate to the solarfarm_ui directory (or create it if it doesn’t exist):mkdir -p solarfarm_ui
+cd solarfarm_ui
+npx create-next-app@15.0.1 .
+
+
+Version: next@15.0.1 (latest stable as of July 2025).
+Choose the following options during setup:
+TypeScript: Yes (recommended for type safety).
+ESLint: Yes.
+Tailwind CSS: Optional (recommended for styling).
+src directory: Yes.
+App Router: Yes (modern Next.js routing).
+Customize default import alias: No (or as preferred).
+
+
+
+
+Update solarfarm_ui/package.json:
+Ensure the following dependencies are included:{
+  "dependencies": {
+    "next": "15.0.1",
+    "react": "^18",
+    "react-dom": "^18",
+    "firebase": "^10.14.1"
+  },
+  "devDependencies": {
+    "typescript": "^5",
+    "@types/node": "^20",
+    "@types/react": "^18",
+    "@types/react-dom": "^18",
+    "eslint": "^8",
+    "eslint-config-next": "15.0.1",
+    "dotenv": "^16.4.5"
+  }
+}
+
+
+Run npm install to install dependencies.
+
+
+
+2. Configure Firebase in Next.js
+
+Set Up Firebase Configuration:
+Use the Firebase configuration from the Firebase Setup section, ensuring environment variables are used to avoid exposing sensitive data.
+Update solarfarm_ui/src/firebase-config.ts (TypeScript version for consistency):import { initializeApp } from "firebase/app";
+import { getAuth } from "firebase/auth";
+import { getDatabase } from "firebase/database";
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const database = getDatabase(app);
+export { app, auth, database };
+
+
+Create solarfarm_ui/.env.local for environment variables:NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-auth-domain.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://your-database-name.firebaseio.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-storage-bucket.appspot.com
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+
+
+Update solarfarm_ui/.gitignore:.env.local
+.env
+*.json
+node_modules/
+.next/
+
+
+
+
+Set Up Firebase Admin SDK for Server-Side (Optional):
+If server-side operations (e.g., API routes) require Firebase Admin SDK, install it:cd solarfarm_ui
+npm install firebase-admin@12.5.0
+
+
+Create solarfarm_ui/src/lib/firebase-admin.ts:import admin from "firebase-admin";
+
+if (!admin.apps.length) {
+  admin.initializeApp({
+    credential: admin.credential.cert({
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+      clientEmail: process.env.FIREBASE_CLIENT_EMAIL
+    }),
+    databaseURL: process.env.FIREBASE_DATABASE_URL
+  });
+}
+
+const db = admin.database();
+const auth = admin.auth();
+export { db, auth };
+
+
+Update solarfarm_ui/.env.local with Admin SDK credentials:FIREBASE_PROJECT_ID=your-project-id
+FIREBASE_PRIVATE_KEY=your-private-key
+FIREBASE_CLIENT_EMAIL=your-client-email
+FIREBASE_DATABASE_URL=https://your-database-name.firebaseio.com
+
+
+Security Note: Store the Admin SDK credentials securely and never commit them. Use a secrets manager for production.
+
+
+
+3. Create a Basic Next.js Page with Firebase
+
+Create a Login Page:
+Create solarfarm_ui/src/app/login/page.tsx:"use client";
+
+import { useState } from "react";
+import { auth } from "@/src/firebase-config";
+import { signInWithEmailAndPassword } from "firebase/auth";
+
+export default function LoginPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      alert("Login successful!");
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  return (
+    <div>
+      <h1>Login</h1>
+      <form onSubmit={handleLogin}>
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Email"
+          required
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          placeholder="Password"
+          required
+        />
+        <button type="submit">Login</button>
+      </form>
+      {error && <p>{error}</p>}
+    </div>
+  );
+}
+
+
+
+
+Create a Data Page:
+Create solarfarm_ui/src/app/data/page.tsx:"use client";
+
+import { useEffect, useState } from "react";
+import { database } from "@/src/firebase-config";
+import { ref, onValue } from "firebase/database";
+
+export default function DataPage() {
+  const [data, setData] = useState<any>(null);
+
+  useEffect(() => {
+    const dataRef = ref(database, "test/data");
+    onValue(dataRef, (snapshot) => {
+      setData(snapshot.val());
+    });
+  }, []);
+
+  return (
+    <div>
+      <h1>Realtime Database Data</h1>
+      {data ? <pre>{JSON.stringify(data, null, 2)}</pre> : <p>Loading...</p>}
+    </div>
+  );
+}
+
+
+
+
+Update Main Page:
+Update solarfarm_ui/src/app/page.tsx:import Link from "next/link";
+
+export default function Home() {
+  return (
+    <div>
+      <h1>Solar Farm UI</h1>
+      <nav>
+        <Link href="/login">Login</Link>
+        <Link href="/data">View Data</Link>
+      </nav>
+    </div>
+  );
+}
+
+
+
+
+
+4. Run and Test the Next.js App
+
+Start the Development Server:
+Run:cd solarfarm_ui
+npm run dev
+
+
+Open http://localhost:3000 to view the app.
+
+
+Test Firebase Integration:
+Navigate to /login and test sign-in with a test user (create in Firebase Console > Authentication).
+Navigate to /data and verify Realtime Database data is displayed.
+Check console logs for errors and validate security rules.
+
+
+Add Test Script:
+Update solarfarm_ui/src/test-firebase.ts:import { auth, database } from "./firebase-config";
+import { ref, set, onValue } from "firebase/database";
+import { signInWithEmailAndPassword } from "firebase/auth";
+
+async function testFirebase() {
+  try {
+    // Test authentication
+    const userCredential = await signInWithEmailAndPassword(auth, "test@example.com", "password123");
+    console.log("User signed in:", userCredential.user.uid);
+
+    // Test Realtime Database
+    const testRef = ref(database, "test/data");
+    await set(testRef, { message: "Hello, Next.js + Firebase!" });
+    onValue(testRef, (snapshot) => {
+      console.log("Data:", snapshot.val());
+    });
+  } catch (error) {
+    console.error("Firebase test error:", error);
+  }
+}
+
+testFirebase();
+
+
+Run tests manually or integrate with a testing framework (e.g., Jest).
+
+
+
+5. Secure Next.js Configuration
+
+Environment Variables: Ensure NEXT_PUBLIC_ prefix is used for client-side variables. Use non-prefixed variables (e.g., FIREBASE_PRIVATE_KEY) for server-side API routes.
+API Routes: For server-side Firebase Admin SDK operations, create API routes (e.g., solarfarm_ui/src/app/api/test/route.ts):import { NextResponse } from "next/server";
+import { db } from "@/src/lib/firebase-admin";
+
+export async function GET() {
+  try {
+    const ref = db.ref("test/data");
+    const snapshot = await ref.once("value");
+    return NextResponse.json(snapshot.val());
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+
+Security Note: Restrict API routes to authorized users using Firebase Authentication tokens.
+
+6. Troubleshooting Next.js Issues
+
+Issue: Environment variables not loading.
+Solution: Ensure NEXT_PUBLIC_ prefix for client-side variables. Restart the development server (npm run dev) after updating .env.local.
+
+
+Issue: Firebase configuration errors.
+Solution: Verify firebaseConfig matches Firebase Console settings. Check for typos in .env.local.
+
+
+Issue: Server-side Admin SDK fails.
+Solution: Ensure FIREBASE_PRIVATE_KEY and other credentials are correctly set in .env.local. Verify file paths or secrets manager integration.
+
+
+Issue: Next.js app fails to build.
+Solution: Run npm run build and check error messages. Ensure TypeScript types are correct and dependencies are installed.
 
 
 
 Testing Environment Setup
 Directory Structure
-For Hardhat users, organize the project as follows:
+For Hardhat and Next.js users, organize the project as follows:
 project-root/
 ├── contracts/
 │   ├── EnergyContract.sol
@@ -542,9 +845,20 @@ project-root/
 │   │   └── EnergyContract.test.js
 ├── solarfarm_ui/
 │   ├── src/
-│   │   ├── firebase-config.js
-│   │   └── test-firebase.js
-│   ├── .env
+│   │   ├── app/
+│   │   │   ├── login/
+│   │   │   │   └── page.tsx
+│   │   │   ├── data/
+│   │   │   │   └── page.tsx
+│   │   │   ├── api/
+│   │   │   │   └── test/
+│   │   │   │       └── route.ts
+│   │   │   └── page.tsx
+│   │   ├── firebase-config.ts
+│   │   ├── lib/
+│   │   │   └── firebase-admin.ts
+│   │   └── test-firebase.ts
+│   ├── .env.local
 │   └── package.json
 ├── .env
 ├── .gitignore
@@ -911,11 +1225,11 @@ Solution: Fetch constants (MAX_KWH_PER_PURCHASE, PRICE_PER_KWH_USD_CENTS) from t
 
 5. Environment Issues
 
-Issue: .env file not loading (Hardhat).
-Solution: Ensure dotenv is installed and require("dotenv").config() is in hardhat.config.js. Check .env file permissions.
+Issue: .env file not loading (Hardhat or Next.js).
+Solution: Ensure dotenv is installed and require("dotenv").config() is in hardhat.config.js or properly configured in Next.js. Check .env file permissions.
 
 
-Issue: Node.js version conflicts (Hardhat).
+Issue: Node.js version conflicts (Hardhat or Next.js).
 Solution: Use nvm to switch to Node.js v18.x (nvm install 18 && nvm use 18).
 
 
@@ -936,4 +1250,4 @@ Solution: Check for Remix plugin updates or use an alternative browser. Fall bac
 
 
 Conclusion
-This setup guide provides a complete environment for developing, testing, and deploying the EnergyContract smart contract using Hardhat with @nomicfoundation/hardhat-toolbox and Remix Solidity IDE with AI-powered security features, integrated with Firebase for authentication and Realtime Database functionality in the solarfarm_ui frontend. It includes instructions for configuring VS Code and Remix, installing dependencies, setting up a local Hardhat blockchain, configuring Firebase, securely handling sensitive credentials, running unit, integration, and security tests, and deploying to local and testnet environments. The professional QA process ensures robustness by addressing critical functions, potential attacks, price feed reliability, network congestion, and payment handling. Troubleshooting tips address common issues to minimize downtime.
+This setup guide provides a complete environment for developing, testing, and deploying the EnergyContract smart contract using Hardhat with @nomicfoundation/hardhat-toolbox and Remix Solidity IDE with AI-powered security features, integrated with a Next.js frontend in solarfarm_ui using Firebase for authentication and Realtime Database functionality. It includes instructions for configuring VS Code and Remix, installing dependencies, setting up a local Hardhat blockchain, configuring Firebase and Next.js, securely handling sensitive credentials, running unit, integration, and security tests, and deploying to local and testnet environments. The professional QA process ensures robustness by addressing critical functions, potential attacks, price feed reliability, network congestion, and payment handling. Troubleshooting tips address common issues to minimize downtime.
