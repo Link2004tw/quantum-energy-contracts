@@ -1,4 +1,4 @@
-import { initializeApp, cert, getApps, app } from "firebase-admin/app";
+import { initializeApp, cert, getApps} from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { configDotenv } from "dotenv";
 

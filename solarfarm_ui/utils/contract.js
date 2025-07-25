@@ -2,6 +2,7 @@ import { ethers } from "ethers";
 import CONTRACT_ABI from "../config/SolarFarmABI.json";
 import MOCKPRICE_ABI from "../config/MockPriceABI.json";
 import { Transaction } from "@/models/transaction";
+
 // Contract ABI and address (replace with your deployed address)
 const CONTRACT_ADDRESS = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"; // Update with your deployed EnergyContract address
 
