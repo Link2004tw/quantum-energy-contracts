@@ -40,3 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env
+solarfarmsystem-firebase-adminsdk-fbsvc-b3714a635d.json
