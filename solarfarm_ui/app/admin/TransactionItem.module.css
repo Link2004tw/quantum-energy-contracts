@@ -1,0 +1,11 @@
+/* components/TransactionItem.module.css */
+.transactionItem {
+  margin-bottom: 10px;
+}
+.error {
+  color: red;
+}
+.transactionDetails {
+  list-style-type: none;
+  padding-left: 10px;
+}

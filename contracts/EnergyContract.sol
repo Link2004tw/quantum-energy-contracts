@@ -19,7 +19,9 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     uint256 public constant STALENESS_THRESHOLD = 15 minutes; // Price feed staleness threshold
     uint256 public constant ADD_ENERGY_DELAY = 2 minutes; // Delay for adding energy
     uint256 public constant COMMIT_REVEAL_WINDOW = 5 minutes; // Commitment reveal window
+    //uint256 public constant COMMIT_COOLDOWN = 5 minutes; // Cooldown between commitments
     uint256 public constant COMMIT_COOLDOWN = 5 minutes; // Cooldown between commitments
+    
     uint256 public constant MAX_AUTHORIZED_PARTIES = 100; // Max authorized parties
     uint256 public constant MAX_GAS_FOR_CALL = 5_000_000; // Gas limit for external calls
     //last failure timestamp for Chainlink price feed
@@ -128,6 +130,10 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         if (_priceFeed == address(0) || _solarFarm == address(0))
             revert InvalidPartyAddress();
         priceFeed = AggregatorV3Interface(_priceFeed);
+        (, int256 price, , , ) = priceFeed.latestRoundData();
+        if (price >= 0) {
+            cachedEthPrice = uint256(price) * 10 ** 10; // Adjust for decimals
+        }
         solarFarm = _solarFarm;
         paymentReceiver = _solarFarm;
         authorizedParties[_solarFarm] = true;
@@ -187,8 +193,11 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     }
 
     // Revokes authorizations in batches for gas efficiency
-    
-    function revokeAuthorizationsBatch(uint256 startIndex, uint256 batchSize) external onlyOwner {
+
+    function revokeAuthorizationsBatch(
+        uint256 startIndex,
+        uint256 batchSize
+    ) external onlyOwner {
         if (startIndex >= authorizedPartyList.length || batchSize == 0)
             revert InvalidBatchIndex(startIndex, authorizedPartyList.length);
         uint256 endIndex = startIndex + batchSize;
@@ -202,7 +211,9 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
                 removedCount++;
             }
         }
-        address[] memory newList = new address[](authorizedPartyList.length - removedCount);
+        address[] memory newList = new address[](
+            authorizedPartyList.length - removedCount
+        );
         uint256 newIndex = 0;
         for (uint256 i = 0; i < authorizedPartyList.length; i++) {
             if (authorizedPartyList[i] != address(0)) {
@@ -429,6 +440,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     }
 
     function getLatestEthPrice() public returns (uint256) {
+        //console.log("EnergyContract: getLatestEthPrice called");
         // Try Chainlink first
         (
             uint80 roundId,
@@ -443,18 +455,33 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         console.logInt(price);
         if (price <= 0) {
             isChainlinkValid = false; // Invalid price
+            console.log("1");
+            //revert InvalidEthPrice();
         } else if (updatedAt <= block.timestamp - STALENESS_THRESHOLD) {
             isChainlinkValid = false; // Stale data
+            console.log("2");
+            //revert InvalidPriceBounds();
         } else if (answeredInRound < roundId) {
             isChainlinkValid = false; // Incomplete round
+            console.log("3");
+            //revert InvalidPriceBounds();
         } else if (price < 100 * 10 ** 8 || price > 10000 * 10 ** 8) {
+            console.log("4");
             isChainlinkValid = false; // Out-of-bounds price
             revert InvalidPriceBounds();
         }
-
+        //revert InvalidEthPrice();
+        console.log(isChainlinkValid);
+        console.logInt(price);
         if (isChainlinkValid) {
+            //revert InvalidEthPrice();
             // Valid Chainlink data: update cache and return price
             uint256 adjustedPrice = uint256(price) * 10 ** 10;
+            if (adjustedPrice == 0) {
+                console.log("EnergyContract: Invalid ETH price from Chainlink");
+                revert InvalidEthPrice();
+            }
+
             cachedEthPrice = adjustedPrice;
             priceLastUpdated = block.timestamp;
             emit PriceCacheUpdated(adjustedPrice, block.timestamp);
