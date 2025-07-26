@@ -1,0 +1,22 @@
+sequenceDiagram
+    actor U as User
+    participant F as Next.js Frontend
+    participant DB as Firebase
+    participant BC as Ethereum Blockchain
+
+    U->>F: Navigate to /login (app/login/page.jsx)
+    F->>DB: Authenticate user (config/firebase.js)
+    DB-->>F: Return auth token
+    F-->>U: Redirect to /profile (app/profile/page.jsx)
+
+    U->>F: Navigate to /buySolar (app/buySolar/page.jsx)
+    F-->>U: Render Buy Solar page with PrimaryButton (components/UI/PrimaryButton.jsx)
+    U->>F: Submit order (energyRequested, payment)
+    F->>F: Create CommittedOrders instance (models/commitedOrders.js)
+    F->>BC: Call commitPurchase on EnergyContract (utils/contract.js, SolarFarmABI.json)
+    BC-->>F: Return transaction hash
+    F->>DB: Save CommittedOrders to Realtime Database (config/firebase.js)
+    DB-->>F: Confirm save
+    F-->>U: Display /orders with OrdersList (app/orders/OrdersList.jsx, OrderItem.jsx)
+
+    Note right of F: Commit-reveal process continues later (EnergyContract.sol)

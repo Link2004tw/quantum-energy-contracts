@@ -1,0 +1,27 @@
+```mermaid
+sequenceDiagram
+    actor U as User
+    participant F as Next.js Frontend
+    participant API as Next.js API
+    participant DB as Firebase
+
+    U->>F: Navigate to /login (app/login/page.jsx)
+    F-->>U: Render Login page with SigningForm (components/Layout/SigningForm.jsx)
+    U->>F: Submit credentials (email, password)
+    F->>DB: Authenticate via Firebase SDK (config/firebase.js)
+    DB-->>F: Return idToken
+    F->>API: POST /api/login with { idToken } (app/api/login/route.js)
+    API-->>F: Set __session cookie, return { status: "ok" }
+    F-->>U: Redirect to /profile (app/profile/page.jsx)
+
+    opt Admin Access
+        U->>F: Navigate to /admin/* (e.g., /admin/add-energy)
+        F->>API: POST /api/verify-role with Authorization: Bearer <__session> (app/api/verify-role/route.js)
+        API->>DB: Verify idToken (config/adminfirebase.js)
+        DB-->>API: Return decoded token with role
+        API-->>F: Respond with { role: "admin" } or { error: "Invalid token" }
+        F-->>U: Render admin page or redirect to /unauthorized (app/unauthorized/page.jsx)
+    end
+
+    Note right of F: __session cookie used for session management and role verification
+```

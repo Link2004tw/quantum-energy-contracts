@@ -1,0 +1,21 @@
+sequenceDiagram
+    actor A as Admin User
+    participant F as Next.js Frontend
+    participant API as Next.js API
+    participant DB as Firebase
+    participant BC as Ethereum Blockchain
+
+    A->>F: Navigate to /admin/add-energy (app/admin/add-energy/page.jsx)
+    F->>API: Verify admin role (app/api/verify-role/route.js)
+    API->>DB: Check admin privileges (config/firebase.js)
+    DB-->>API: Confirm admin role
+    API-->>F: Return role verification
+    F-->>A: Render Add Energy page with PrimaryButton, ProgressBar (components/UI/PrimaryButton.jsx, ProgressBar.jsx)
+    A->>F: Submit energy amount (energyRequested)
+    F->>BC: Call addEnergy on EnergyContract (utils/contract.js, SolarFarmABI.json)
+    BC-->>F: Return transaction hash
+    F->>DB: Save transaction to Realtime Database (config/firebase.js, models/transaction.js)
+    DB-->>F: Confirm save
+    F-->>A: Display confirmation on /admin/add-energy or redirect to /admin (app/admin/page.jsx)
+
+    Note right of F: ProgressBar updates transaction status
