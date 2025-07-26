@@ -36,9 +36,9 @@ export default function OrdersList() {
           })
         );
         setOrders(ordersArray);
-        console.log("Fetched orders:", ordersArray);
+        //console.log("Fetched orders:", ordersArray);
       } else {
-        console.log("No orders found for user:", user._uid);
+        //console.log("No orders found for user:", user._uid);
         setOrders([]);
       }
     } catch (err) {

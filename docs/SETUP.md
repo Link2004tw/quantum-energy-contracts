@@ -58,23 +58,23 @@ Add the following to your VS Code `settings.json` (accessed via `File > Preferen
 Remix is a browser-based IDE that simplifies Solidity development and provides powerful security analysis tools. To set up Remix for `EnergyContract`:
 
 1. **Access Remix**:
-    - Open [remix.ethereum.org](https://remix.ethereum.org/) in a modern browser (e.g., Chrome, Firefox).
-    - Create a new workspace or import files from your local project (e.g., `contracts/EnergyContract.sol`, `contracts/MockV3Aggregator.sol`, `contracts/MaliciousContract.sol`).
+   - Open [remix.ethereum.org](https://remix.ethereum.org/) in a modern browser (e.g., Chrome, Firefox).
+   - Create a new workspace or import files from your local project (e.g., `contracts/EnergyContract.sol`, `contracts/MockV3Aggregator.sol`, `contracts/MaliciousContract.sol`).
 2. **Configure Remix**:
-    - **Solidity Compiler**: In the "Solidity Compiler" plugin, select version `0.8.30` to match the contract’s `pragma solidity ^0.8.30`.
-    - **Environment**: Use the "JavaScript VM" for quick testing or connect to a Hardhat node (`http://localhost:9545`) via the "Web3 Provider" for local blockchain testing.
-    - **File Explorer**: Upload or create `EnergyContract.sol`, `MockV3Aggregator.sol`, and `MaliciousContract.sol`.
+   - **Solidity Compiler**: In the "Solidity Compiler" plugin, select version `0.8.30` to match the contract’s `pragma solidity ^0.8.30`.
+   - **Environment**: Use the "JavaScript VM" for quick testing or connect to a Hardhat node (`http://localhost:9545`) via the "Web3 Provider" for local blockchain testing.
+   - **File Explorer**: Upload or create `EnergyContract.sol`, `MockV3Aggregator.sol`, and `MaliciousContract.sol`.
 3. **AI-Powered Security Analysis**:
-    - **Remix Static Analysis**: Activate the "Solidity Static Analysis" plugin to detect vulnerabilities (e.g., reentrancy in `revealPurchase`, `withdrawRefunds`, unchecked external calls).
-    - **AI Features**: Use Remix’s experimental AI-driven code analysis (via plugins like "Code Analysis" or third-party integrations) to:
-        - Identify security threats (e.g., reentrancy, access control issues, arithmetic overflows).
-        - Suggest gas optimizations for functions like `calculateRequiredPayment`.
-        - Detect logical errors in the commit-reveal process.
-    - **Usage**: Run AI analysis on `EnergyContract.sol` and review reports for warnings about reentrancy, access control, or price feed issues. Cross-reference with `test/security/SecurityTests.test.js`.
-    - **Limitations**: AI features are experimental and may miss edge cases. Combine with static analysis and Hardhat tests for comprehensive coverage.
+   - **Remix Static Analysis**: Activate the "Solidity Static Analysis" plugin to detect vulnerabilities (e.g., reentrancy in `revealPurchase`, `withdrawRefunds`, unchecked external calls).
+   - **AI Features**: Use Remix’s experimental AI-driven code analysis (via plugins like "Code Analysis" or third-party integrations) to:
+     - Identify security threats (e.g., reentrancy, access control issues, arithmetic overflows).
+     - Suggest gas optimizations for functions like `calculateRequiredPayment`.
+     - Detect logical errors in the commit-reveal process.
+   - **Usage**: Run AI analysis on `EnergyContract.sol` and review reports for warnings about reentrancy, access control, or price feed issues. Cross-reference with `test/security/SecurityTests.test.js`.
+   - **Limitations**: AI features are experimental and may miss edge cases. Combine with static analysis and Hardhat tests for comprehensive coverage.
 4. **Testing in Remix**:
-    - Use the "Solidity Unit Testing" plugin to write and run simple tests, complementing Hardhat tests.
-    - Deploy contracts to the JavaScript VM or Hardhat node to test interactions (e.g., `Authorize`, `commitPurchase`).
+   - Use the "Solidity Unit Testing" plugin to write and run simple tests, complementing Hardhat tests.
+   - Deploy contracts to the JavaScript VM or Hardhat node to test interactions (e.g., `Authorize`, `commitPurchase`).
 
 ## Required Dependencies and Versions
 
@@ -132,6 +132,7 @@ npm install --save-dev @chainlink/contracts
 ```bash
 npm install --save-dev @uniswap/v3-sdk
 ```
+
 ### Frontend Dependencies (solarfarm_ui)
 
 - **Next.js**: v15.0.1 (based on `solarfarm_ui/package.json` and build artifacts).
@@ -143,6 +144,7 @@ npm install --save-dev @uniswap/v3-sdk
 cd solarfarm_ui
 npm install next firebase firebase-admin
 ```
+
 ### Other Dependencies
 
 - **dotenv**: v16.4.5 (for managing environment variables in `.env`).
@@ -165,12 +167,15 @@ npm install --save-dev tailwindcss
 ```
 
 ### Alternatively
-You can clone the repo and use 
+
+You can clone the repo and use
+
 ```bash
-npm install 
+npm install
 ```
 
 and it will install all the packages from packages.json
+
 ### Project Setup
 
 For Hardhat users, initialize a Hardhat project if not already set up:
@@ -230,26 +235,25 @@ require("@nomicfoundation/hardhat-toolbox");
 require("dotenv").config();
 
 module.exports = {
-	solidity: "0.8.30",
-	networks: {
-		hardhat: {
-			hainId: 31337,
-		},
-	
-		sepholia: {
-			url: process.env.SEPOLIA_RPC_URL ||
-			"https://sepolia.infura.io/v3/YOUR_PROJECT_ID",
-			accounts: [process.env.PRIVATE_KEY],
-			chainId: 11155111,
-		},
+  solidity: "0.8.30",
+  networks: {
+    hardhat: {
+      hainId: 31337,
+    },
 
-		localhost: {
-			url: "http://127.0.0.1:8545",
-			chainId: 31337,
-		},
+    sepholia: {
+      url:
+        process.env.SEPOLIA_RPC_URL ||
+        "https://sepolia.infura.io/v3/YOUR_PROJECT_ID",
+      accounts: [process.env.PRIVATE_KEY],
+      chainId: 11155111,
+    },
 
-	},
-
+    localhost: {
+      url: "http://127.0.0.1:8545",
+      chainId: 31337,
+    },
+  },
 };
 ```
 
@@ -321,107 +325,104 @@ Update `solarfarm_ui/package.json`:
 ### 2. Create a Firebase Project
 
 1. **Go to Firebase Console**:
-    - Open [console.firebase.google.com](https://console.firebase.google.com/), sign in, and create a project (e.g., `solarfarmsystem`).
+   - Open [console.firebase.google.com](https://console.firebase.google.com/), sign in, and create a project (e.g., `solarfarmsystem`).
 2. **Get Configuration**:
-    - In **Project settings > General**, register a web app (`solarfarm-ui`).
-    - Copy the `firebaseConfig` object (e.g., `apiKey`, `authDomain`).
+   - In **Project settings > General**, register a web app (`solarfarm-ui`).
+   - Copy the `firebaseConfig` object (e.g., `apiKey`, `authDomain`).
 3. **Add to Frontend**:
-    - Update `solarfarm_ui/config/firebase.js`:
-        
-        ```javascript
-        import { initializeApp } from "firebase/app";
-        import { getAuth } from "firebase/auth";
-        import { getDatabase } from "firebase/database";
-        
-        const firebaseConfig = {
-          apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-          authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-          databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
-          projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-          storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-          messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-          appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
-        };
-        
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const database = getDatabase(app);
-        export { app, auth, database };
-        ```
-        
-    - Create `solarfarm_ui/.env`:
-        
-        ```plaintext
-        NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
-        NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-auth-domain.firebaseapp.com
-        NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://your-database-name.firebaseio.com
-        NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-        NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-storage-bucket.appspot.com
-        NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
-        NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
-        ```
+   - Update `solarfarm_ui/config/firebase.js`:
+     ```javascript
+     import { initializeApp } from "firebase/app";
+     import { getAuth } from "firebase/auth";
+     import { getDatabase } from "firebase/database";
+
+     const firebaseConfig = {
+       apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+       authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+       databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
+       projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+       storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+       messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+       appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+     };
+
+     const app = initializeApp(firebaseConfig);
+     const auth = getAuth(app);
+     const database = getDatabase(app);
+     export { app, auth, database };
+     ```
+   - Create `solarfarm_ui/.env`:
+     ```plaintext
+     NEXT_PUBLIC_FIREBASE_API_KEY=your-api-key
+     NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your-auth-domain.firebaseapp.com
+     NEXT_PUBLIC_FIREBASE_DATABASE_URL=https://your-database-name.firebaseio.com
+     NEXT_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+     NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-storage-bucket.appspot.com
+     NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
+     NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
+     ```
 
 ### 3. Enable Authentication
 
 1. In Firebase Console, go to **Build > Authentication**, enable Email/Password and Google sign-in.
 2. Integrate in `solarfarm_ui/app/login/page.jsx` and `solarfarm_ui/app/signup/page.jsx` using `signInWithEmailAndPassword` and `createUserWithEmailAndPassword`.
+
 ### 4. Enable Realtime Database
 
 1. In Firebase Console, go to **Build > Realtime Database**, create a database in test mode.
 2. Update security rules:
-    
-    ```json
-    {
-      "rules": {
-        ".read": "auth != null",
-        ".write": "auth != null"
-      }
-    }
-    ```
-    
+
+   ```json
+   {
+     "rules": {
+       ".read": "auth != null",
+       ".write": "auth != null"
+     }
+   }
+   ```
+
 3. Integrate in `solarfarm_ui/utils/databaseUtils.js` using `getDatabase` from `solarfarm_ui/config/firebase.js`.
 
 ### 5. Secure Service Account Credentials
 
 The `solarfarmsystem-firebase-adminsdk-fbsvc-b3714a635d.json` file is sensitive. Secure it:
 
-1. **Download Key**:
+1.  **Download Key**:
     - In Firebase Console, go to **Project settings > Service accounts**, generate a new key.
-2. **Add to `.gitignore`**:
-    
+2.  **Add to `.gitignore`**:
+
     ```plaintext
     solarfarm_ui/*.json
     ```
-    
-3. **Use in Admin SDK**:
-    - Update `solarfarm_ui/config/adminfirebase.js`:
-        ```plaintext
+
+3.  **Use in Admin SDK**: - Update `solarfarm_ui/config/adminfirebase.js`:
+    `plaintext
         FIREBASE_PROJECT_ID=your-project-id
         FIREBASE_PRIVATE_KEY=your-private-key
         FIREBASE_CLIENT_EMAIL=your-client-email
         FIREBASE_DATABASE_URL=https://your-database-name.firebaseio.com
-        ```
-        
-        ```javascript
-import { initializeApp, cert, getApps} from "firebase-admin/app";
-import { getAuth } from "firebase-admin/auth";
-import { configDotenv } from "dotenv";
-configDotenv();
+        `
+            ```javascript
+    import { initializeApp, cert, getApps} from "firebase-admin/app";
+    import { getAuth } from "firebase-admin/auth";
+    import { configDotenv } from "dotenv";
+    configDotenv();
 
 if (!getApps().length) {
-	initializeApp({
-		credential: cert({
-			projectId: process.env.FIREBASE_PROJECT_ID,
-			clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-			privateKey: 
-			process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
-		}),
-		databaseURL: "https://solarfarmsystem-default-rtdb.firebaseio.com",
-	});
+initializeApp({
+credential: cert({
+projectId: process.env.FIREBASE_PROJECT_ID,
+clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+privateKey:
+process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, "\n"),
+}),
+databaseURL: "https://solarfarmsystem-default-rtdb.firebaseio.com",
+});
 }
 
 export const adminAuth = getAuth();
-```
+
+````
 ### 6. Test Firebase Integration
 
 - Test authentication in `solarfarm_ui/app/login/page.jsx` and database access in `solarfarm_ui/app/orders/page.jsx`.
@@ -430,9 +431,10 @@ export const adminAuth = getAuth();
 ```bash
 cd solarfarm_ui
 npm run dev
-```
+````
 
 - Access `http://localhost:3000/login` and `http://localhost:3000/orders`.
+
 ## Next.js Setup for Frontend
 
 The `solarfarm_ui` directory uses Next.js for the frontend, integrated with Firebase and the `EnergyContract` via `SolarFarmABI.json`.
@@ -461,20 +463,15 @@ The project is already initialized. Verify `solarfarm_ui/package.json`:
 
 ### 2. Configure Contract Integration
 
-1. **Use ABIs**:
-	- Go to remix ide and get the ABI for each contract 
-    - `solarfarm_ui/config/SolarFarmABI.json` and `MockPriceABI.json` are used for contract interactions.
-    - Update `solarfarm_ui/utils/contract.js`:
-    -  update the contract addresses with the ones you get for when you deploy and get the network details from `hardhat.config.js`
-        
-        ```javascript
-import { ethers } from "ethers";
-import CONTRACT_ABI from "../config/SolarFarmABI.json";
-import MOCKPRICE_ABI from "../config/MockPriceABI.json";
-import { Transaction } from "@/models/transaction";
+1.  **Use ABIs**: - Go to remix ide and get the ABI for each contract - `solarfarm_ui/config/SolarFarmABI.json` and `MockPriceABI.json` are used for contract interactions. - Update `solarfarm_ui/utils/contract.js`: - update the contract addresses with the ones you get for when you deploy and get the network details from `hardhat.config.js`
+            ```javascript
+    import { ethers } from "ethers";
+    import CONTRACT_ABI from "../config/SolarFarmABI.json";
+    import MOCKPRICE_ABI from "../config/MockPriceABI.json";
+    import { Transaction } from "@/models/transaction";
 
 // Contract ABI and address (replace with your deployed address)
-const CONTRACT_ADDRESS = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"; 
+const CONTRACT_ADDRESS = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
 // Update with your deployed EnergyContract address
 
 const MOCKP_RICE_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
@@ -482,137 +479,135 @@ const MOCKP_RICE_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 const NETWORK_CONFIG = {
 
-	hardhat: {
-		chainId: "31337",
-		rpcUrl: "http://127.0.0.1:8545",
-		chainName: "Hardhat",
-		currency: { name: "ETH", symbol: "ETH", decimals: 18 },
-		blockExplorerUrls: [],
-	},
-	
-	sepolia: {
-	
-		chainId: "11155111",
-		rpcUrl:
-		process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ||
-		"https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_ACCESS_KEY",
-		chainName: "Sepolia",
-		currency: { name: "ETH", symbol: "ETH", decimals: 18 },
-		blockExplorerUrls: ["https://sepolia.etherscan.io"],
-	},
+    hardhat: {
+    	chainId: "31337",
+    	rpcUrl: "http://127.0.0.1:8545",
+    	chainName: "Hardhat",
+    	currency: { name: "ETH", symbol: "ETH", decimals: 18 },
+    	blockExplorerUrls: [],
+    },
+
+    sepolia: {
+
+    	chainId: "11155111",
+    	rpcUrl:
+    	process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ||
+    	"https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_ACCESS_KEY",
+    	chainName: "Sepolia",
+    	currency: { name: "ETH", symbol: "ETH", decimals: 18 },
+    	blockExplorerUrls: ["https://sepolia.etherscan.io"],
+    },
 
 };
-
-  
 
 // Initialize contract
 
 const getContract = async (
-	networkName = "hardhat",
-	address,
-	abi,
-	useSigner = false
+networkName = "hardhat",
+address,
+abi,
+useSigner = false
 ) => {
 
-	try {
-		let provider;
-		let signer;
-		  
-		
-		if (useSigner && typeof window.ethereum !== "undefined") {
-		// MetaMask provider
-		
-		provider = new ethers.BrowserProvider(window.ethereum);
-		
-		  
-		
-		await window.ethereum.request({ method: "eth_requestAccounts" });
-		
-		signer = await provider.getSigner();
-		
-		// Switch to the correct network
-		
-		const network = await provider.getNetwork();
-		
-		const targetConfig = NETWORK_CONFIG[networkName];
-		
-		//console.log("Current network:", NETWORK_CONFIG);
-		
-		if (network.chainId.toString() !== targetConfig.chainId) {
-		
-		try {
-		
-		await window.ethereum.request({
-		
-		method: "wallet_switchEthereumChain",
-		
-		params: [
-		
-		{
-		
-		chainId: `0x${parseInt(targetConfig.chainId, 10).toString(16)}`,
-		
-		},
-		
-		],
-		
-		});
-		
-		} catch (switchError) {
-		
-		if (switchError.code === 4902) {
-		
-		await window.ethereum.request({
-		
-		method: "wallet_addEthereumChain",
-		
-		params: [
-		
-		{
-		
-		chainId: `0x${parseInt(targetConfig.chainId, 10).toString(
-		
-		16
-		
-		)}`,
-		
-		chainName: targetConfig.chainName,
-		
-		rpcUrls: [targetConfig.rpcUrl],
-		
-		nativeCurrency: targetConfig.currency,
-		
-		blockExplorerUrls: targetConfig.blockExplorerUrls,
-		
-		},
-		
-		],
-		
-		});
-		
-		} else {
-		
-		throw switchError;
-		
-		}
-		
-		}
-	
-	}
-	
-	return new ethers.Contract(address, abi, signer);
-	
-	} else {
-	
-	// RPC provider for read-only
-	
-	const targetConfig = NETWORK_CONFIG[networkName];
-	
-	provider = new ethers.JsonRpcProvider(targetConfig.rpcUrl);
-	
-	return new ethers.Contract(address, abi, provider);
-	
-	}
+    try {
+    	let provider;
+    	let signer;
+
+
+    	if (useSigner && typeof window.ethereum !== "undefined") {
+    	// MetaMask provider
+
+    	provider = new ethers.BrowserProvider(window.ethereum);
+
+
+
+    	await window.ethereum.request({ method: "eth_requestAccounts" });
+
+    	signer = await provider.getSigner();
+
+    	// Switch to the correct network
+
+    	const network = await provider.getNetwork();
+
+    	const targetConfig = NETWORK_CONFIG[networkName];
+
+    	//console.log("Current network:", NETWORK_CONFIG);
+
+    	if (network.chainId.toString() !== targetConfig.chainId) {
+
+    	try {
+
+    	await window.ethereum.request({
+
+    	method: "wallet_switchEthereumChain",
+
+    	params: [
+
+    	{
+
+    	chainId: `0x${parseInt(targetConfig.chainId, 10).toString(16)}`,
+
+    	},
+
+    	],
+
+    	});
+
+    	} catch (switchError) {
+
+    	if (switchError.code === 4902) {
+
+    	await window.ethereum.request({
+
+    	method: "wallet_addEthereumChain",
+
+    	params: [
+
+    	{
+
+    	chainId: `0x${parseInt(targetConfig.chainId, 10).toString(
+
+    	16
+
+    	)}`,
+
+    	chainName: targetConfig.chainName,
+
+    	rpcUrls: [targetConfig.rpcUrl],
+
+    	nativeCurrency: targetConfig.currency,
+
+    	blockExplorerUrls: targetConfig.blockExplorerUrls,
+
+    	},
+
+    	],
+
+    	});
+
+    	} else {
+
+    	throw switchError;
+
+    	}
+
+    	}
+
+    }
+
+    return new ethers.Contract(address, abi, signer);
+
+    } else {
+
+    // RPC provider for read-only
+
+    const targetConfig = NETWORK_CONFIG[networkName];
+
+    provider = new ethers.JsonRpcProvider(targetConfig.rpcUrl);
+
+    return new ethers.Contract(address, abi, provider);
+
+    }
 
 } catch (error) {
 
@@ -621,8 +616,6 @@ throw new Error(`Failed to initialize contract: ${error.message}`);
 }
 
 };
-
-  
 
 // Check if contract connection is successful
 
@@ -644,8 +637,6 @@ false
 
 const provider = contract.runner.provider;
 
-  
-
 // Check provider connection
 
 const network = await provider.getNetwork();
@@ -662,8 +653,6 @@ throw new Error(
 
 }
 
-  
-
 // Check if contract is deployed (has code at address)
 
 const code = await provider.getCode(CONTRACT_ADDRESS);
@@ -673,8 +662,6 @@ if (code === "0x") {
 throw new Error(`No contract deployed at address ${CONTRACT_ADDRESS}`);
 
 }
-
-  
 
 // Test a simple read call to solarFarm()
 
@@ -689,8 +676,6 @@ throw new Error(
 );
 
 }
-
-  
 
 return {
 
@@ -722,8 +707,6 @@ solarFarmAddress: null,
 
 };
 
-  
-
 // Call solarFarm()
 
 export const getSolarFarm = async (networkName = "hardhat") => {
@@ -754,8 +737,6 @@ throw new Error(`Error calling solarFarm: ${error.message}`);
 
 };
 
-  
-
 // Call getLatestEthPrice()
 
 export const getLatestEthPrice = async (networkName = "hardhat") => {
@@ -781,8 +762,6 @@ true
 await contract.getLatestEthPrice();
 
 //await tx.wait(); // Wait for transaction to mine and update cache
-
-console.log("the error is not before here");
 
 const price = await contract.getCachedEthPrice();
 
@@ -822,8 +801,6 @@ throw new Error(`Error calling getLatestEthPrice: ${error.message}`);
 
 };
 
-  
-
 export const getCost = async (amount, networkName = "hardhat") => {
 
 try {
@@ -850,10 +827,6 @@ throw new Error("Amount must be greater than zero");
 
 const ethPrice = BigInt(parseInt(await getLatestEthPrice(networkName)));
 
-console.log(ethPrice);
-
-console.log("Latest ETH price:", ethPrice / BigInt(1e10));
-
 const price = await contract.calculateRequiredPayment(
 
 amount,
@@ -862,7 +835,7 @@ ethPrice / BigInt(1e10)
 
 );
 
-console.log("Price in wei:", price.toString());
+//console.log("Price in wei:", price.toString());
 
 return ethers.formatUnits(price, 18); // Convert to ETH
 
@@ -873,8 +846,6 @@ throw new Error(`Error calculating cost: ${error.message}`);
 }
 
 };
-
-  
 
 export const getAvailableEnergy = async (networkName = "hardhat") => {
 
@@ -892,7 +863,7 @@ false
 
 );
 
-console.log("Fetching available energy...");
+//console.log("Fetching available energy...");
 
 const energy = await contract.availableKWh();
 
@@ -905,8 +876,6 @@ throw new Error(`Error fetching available energy: ${error.message}`);
 }
 
 };
-
-  
 
 const getHashedCommitment = (kWh, nonce, sender) => {
 
@@ -924,8 +893,6 @@ ethers.solidityPacked(
 
 };
 
-  
-
 // Derive a numeric nonce from Firebase UID
 
 export const getNonceFromUid = (uid) => {
@@ -936,33 +903,23 @@ throw new Error("Invalid Firebase UID");
 
 }
 
-  
-
 // Hash the UID to a bytes32 value
 
 const hash = ethers.keccak256(ethers.toUtf8Bytes(uid));
-
-  
 
 // Convert first 4 bytes of hash to a number
 
 const hashNumber = Number(BigInt(hash.slice(0, 10)) & BigInt(0xffffffff));
 
-  
-
 // Scale to 5-digit range (10000 to 99999)
 
 const nonce = 10000 + (hashNumber % 90000);
 
-  
-
-console.log("Derived nonce from UID:", nonce);
+//console.log("Derived nonce from UID:", nonce);
 
 return nonce.toString(); // Return as string
 
 };
-
-  
 
 // grok fixed this function
 
@@ -988,15 +945,13 @@ true
 
 ); // Use signer for transactions
 
-//console.log("uid is ", user._uid, typeof user._uid);
+//console.log("uid is ", user.\_uid, typeof user.\_uid);
 
-const nonce = getNonceFromUid(user._uid); // Use _uid for nonce
+const nonce = getNonceFromUid(user.\_uid); // Use \_uid for nonce
 
-  
+const hash = getHashedCommitment(amount, nonce, user.\_ethereumAddress); // Use uid instead of \_id
 
-const hash = getHashedCommitment(amount, nonce, user._ethereumAddress); // Use uid instead of _id
-
-console.log(hash);
+//console.log(hash);
 
 const tx = await contract.commitPurchase(hash);
 
@@ -1013,8 +968,6 @@ throw new Error(`Error committing purchase: ${error.message}`);
 }
 
 };
-
-  
 
 export const getEthBalance = async (address, networkName = "hardhat") => {
 
@@ -1048,8 +1001,6 @@ throw new Error(`Failed to fetch ETH balance: ${error.message}`);
 
 };
 
-  
-
 export const revealPurchase = async (networkName = "hardhat", amount, user) => {
 
 try {
@@ -1060,7 +1011,7 @@ throw new Error("Amount must be between 1 and 1000 kWh");
 
 }
 
-if (!user || !user._ethereumAddress) {
+if (!user || !user.\_ethereumAddress) {
 
 throw new Error("User Ethereum address is required");
 
@@ -1084,9 +1035,7 @@ const signer = await contract.runner.provider.getSigner();
 
 const signerAddress = await signer.getAddress();
 
-  
-
-if (signerAddress.toLowerCase() !== user._ethereumAddress.toLowerCase()) {
+if (signerAddress.toLowerCase() !== user.\_ethereumAddress.toLowerCase()) {
 
 throw new Error(
 
@@ -1096,8 +1045,6 @@ throw new Error(
 
 }
 
-  
-
 // Calculate required payment
 
 await contract.getLatestEthPrice(); // Ensure the contract is ready
@@ -1105,8 +1052,6 @@ await contract.getLatestEthPrice(); // Ensure the contract is ready
 const ethPrice = await contract.getCachedEthPrice();
 
 console.log("eth price in reveal purchase: ", ethPrice / BigInt(10e10));
-
-  
 
 const totalCostWei = await contract.calculateRequiredPayment(
 
@@ -1116,15 +1061,13 @@ ethPrice / BigInt(10e10)
 
 );
 
-  
-
 // Call revealPurchase
 
 const revealTx = await contract.revealPurchase(
 
 amount,
 
-getNonceFromUid(user._uid),
+getNonceFromUid(user.\_uid),
 
 {
 
@@ -1152,8 +1095,6 @@ error.reason || error.message || "Failed to reveal purchase"
 
 };
 
-  
-
 // utils/contract.js
 
 export const getTransactions = async (networkName = "hardhat") => {
@@ -1172,21 +1113,15 @@ false // Read-only, no signer needed
 
 );
 
-  
-
 // Get the total number of transactions
 
 const transactionCount = await contract.transactionCount();
 
 const transactionCountNum = Number(transactionCount); // Convert BigNumber to number
 
-  
-
 // Array to store transactions
 
 const transactions = [];
-
-  
 
 // Loop through each transaction index
 
@@ -1238,8 +1173,6 @@ error: `Failed to fetch transaction ${i}`,
 
 }
 
-  
-
 return transactions;
 
 } catch (error) {
@@ -1252,13 +1185,11 @@ throw new Error(`Failed to fetch transactions: ${error.message}`);
 
 };
 
-  
-
 export const checkIfAuthorized = async (user) => {
 
 console.log("Checking if user is authorized:", user);
 
-if (!user || !user._ethereumAddress) {
+if (!user || !user.\_ethereumAddress) {
 
 throw new Error(
 
@@ -1280,15 +1211,11 @@ true
 
 );
 
-return await contract.authorizedParties(user._ethereumAddress);
+return await contract.authorizedParties(user.\_ethereumAddress);
 
 };
 
-  
-
 // this is for testing purposes only. for admin use
-
-  
 
 export const getMockPrice = async () => {
 
@@ -1304,13 +1231,9 @@ false
 
 );
 
-  
-
 return await mockPriceContract.latestRoundData();
 
 };
-
-  
 
 export const updateAnswer = async (price, networkName = "hardhat") => {
 
@@ -1344,8 +1267,6 @@ await mockPriceContract.updateAnswer(price);
 
 };
 
-  
-
 export const addEnergy = async (kwh, networkName = "hardhat") => {
 
 try {
@@ -1357,8 +1278,6 @@ alert("kWh must be between 1 and 1000");
 throw new Error("kWh must be between 1 and 1000");
 
 }
-
-  
 
 const contract = await getContract(
 
@@ -1372,15 +1291,11 @@ true
 
 );
 
-console.log("fel add energy yasta");
-
 const signer = await contract.runner.provider.getSigner();
 
 const signerAddress = await signer.getAddress();
 
 console.log(signerAddress);
-
-  
 
 const ownerAddress = await getSolarFarm();
 
@@ -1394,8 +1309,6 @@ throw new Error("Only the contract owner can add energy");
 
 }
 
-  
-
 // Step 1: Request to add energy
 
 const requestTx = await contract.requestAddEnergy(kwh);
@@ -1404,11 +1317,9 @@ await requestTx.wait();
 
 console.log(`Energy add request submitted: ${requestTx.hash}`);
 
-  
-
 // Step 2: Wait for ADD_ENERGY_DELAY (2 minutes = 120,000 ms)
 
-const ADD_ENERGY_DELAY = 2 * 60 * 1000; // 2 minutes in milliseconds
+const ADD_ENERGY_DELAY = 2 _ 60 _ 1000; // 2 minutes in milliseconds
 
 alert(
 
@@ -1417,8 +1328,6 @@ alert(
 );
 
 await new Promise((resolve) => setTimeout(resolve, ADD_ENERGY_DELAY));
-
-  
 
 // Step 3: Confirm adding energy
 
@@ -1433,8 +1342,6 @@ alert(
 `Energy added successfully! ${kwh} kWh added to the pool. Transaction hash: ${confirmTx.hash}`
 
 );
-
-  
 
 return {
 
@@ -1479,17 +1386,15 @@ throw new Error(`Error adding energy: ${errorMessage}`);
 }
 
 };
-        ```
-        
+```
+
 2. **Add Environment Variables**:
-    - Update `solarfarm_ui/.env`:
-        
-        ```plaintext
-        NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
-        NEXT_PUBLIC_CONTRACT_ADDRESS=your_contract_address
-        NEXT_PUBLIC_PRICE_FEED_ADDRESS=your_price_feed_address
-        ```
-        
+   - Update `solarfarm_ui/.env`:
+     ```plaintext
+     NEXT_PUBLIC_RPC_URL=http://127.0.0.1:8545
+     NEXT_PUBLIC_CONTRACT_ADDRESS=your_contract_address
+     NEXT_PUBLIC_PRICE_FEED_ADDRESS=your_price_feed_address
+     ```
 
 ### 3. Run the Frontend
 
@@ -1582,60 +1487,59 @@ This section provides a detailed setup for deploying the `EnergyContract` smart 
 ### 1. Set Up a Wallet
 
 1. **Create a Wallet**:
-    - Use MetaMask or generate a wallet via Hardhat:
-        
-        ```bash
-        npx hardhat accounts
-        ```
-        
-    - Export the private key securely.
+   - Use MetaMask or generate a wallet via Hardhat:
+     ```bash
+     npx hardhat accounts
+     ```
+   - Export the private key securely.
 2. **Add to `.env`**:
-    
-    ```plaintext
-    PRIVATE_KEY=your_private_key_here
-    ```
-    
-    - Ensure `.gitignore` includes `.env`.
+
+   ```plaintext
+   PRIVATE_KEY=your_private_key_here
+   ```
+
+   - Ensure `.gitignore` includes `.env`.
 
 ## Add them to MetaMask
-You can add a custom network to MetaMask with the url of you current network and you can add the users by logging in using their private keys 
+
+You can add a custom network to MetaMask with the url of you current network and you can add the users by logging in using their private keys
+
 ### 2. Obtain Testnet ETH
 
 1. **Use a Sepolia Faucet**:
-    - [Infura Sepolia Faucet](https://www.infura.io/faucet/sepolia)
-    - [Alchemy Sepolia Faucet](https://sepoliafaucet.com/)
-    - Request 0.5–1 ETH.
+   - [Infura Sepolia Faucet](https://www.infura.io/faucet/sepolia)
+   - [Alchemy Sepolia Faucet](https://sepoliafaucet.com/)
+   - Request 0.5–1 ETH.
 2. **Verify Funds**:
-    - Check on [Sepolia Etherscan](https://sepolia.etherscan.io/).
+   - Check on [Sepolia Etherscan](https://sepolia.etherscan.io/).
 
 ### 3. Configure RPC Providers
 
 1. **Get RPC URL**:
-    - Sign up at Infura/Alchemy for a Sepolia RPC URL.
+   - Sign up at Infura/Alchemy for a Sepolia RPC URL.
 2. **Add to `.env`**:
-    
-    ```plaintext
-    SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
-    ```
-    
+
+   ```plaintext
+   SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_PROJECT_ID
+   ```
 
 ### 4. Configure Etherscan API Key
 
 1. **Get API Key**:
-    - Register at [Etherscan](https://etherscan.io/register).
+   - Register at [Etherscan](https://etherscan.io/register).
 2. **Add to `.env`**:
-    
-    ```plaintext
-    ETHERSCAN_API_KEY=your_etherscan_api_key_here
-    ```
+
+   ```plaintext
+   ETHERSCAN_API_KEY=your_etherscan_api_key_here
+   ```
+
 ### 5. Create Deployment Scripts
 
 1. **Update `deploy.js`**:
-    
-    ```javascript
-    const { ethers } = require("hardhat");
 
-  
+   ```javascript
+   const { ethers } = require("hardhat");
+   ```
 
 const addEnergy = async (energyContract, signer, energy) => {
 
@@ -1643,13 +1547,9 @@ const addEnergy = async (energyContract, signer, energy) => {
 
 const contractWithSigner = energyContract.connect(signer);
 
-  
-
 // Request energy addition
 
 await contractWithSigner.requestAddEnergy(energy);
-
-  
 
 // Advance blockchain time
 
@@ -1661,23 +1561,17 @@ await ethers.provider.send("evm_setNextBlockTimestamp", [confirmTimestamp]);
 
 await ethers.provider.send("evm_mine");
 
-  
-
 // Confirm energy addition
 
 await contractWithSigner.confirmAddEnergy(energy);
 
 };
 
-  
-
 async function main() {
 
 const [deployer] = await ethers.getSigners();
 
 console.log("Deploying contracts with account:", deployer.address);
-
-  
 
 // Deploy MockV3Aggregator for local testing
 
@@ -1691,15 +1585,13 @@ console.log("Network chainId:", network.chainId);
 
 const MockV3Aggregator = await ethers.getContractFactory("MockV3Aggregator");
 
-const mockPriceFeed = await MockV3Aggregator.deploy(8, 2000 * 10 ** 8); // 8 decimals, 2000 USD/ETH
+const mockPriceFeed = await MockV3Aggregator.deploy(8, 2000 \* 10 \*\* 8); // 8 decimals, 2000 USD/ETH
 
 await mockPriceFeed.waitForDeployment();
 
 priceFeedAddress = await mockPriceFeed.getAddress();
 
 console.log("MockV3Aggregator deployed to:", priceFeedAddress);
-
-  
 
 // Deploy EnergyContract
 
@@ -1727,8 +1619,6 @@ const contractAddress = await energyContract.getAddress();
 
 console.log("EnergyContract deployed to:", contractAddress);
 
-  
-
 // Test solarFarm state variable
 
 const solarFarm = await energyContract.solarFarm();
@@ -1740,8 +1630,6 @@ console.log(deployer.address, "is the solarFarm address:", solarFarm === deploye
 await addEnergy(energyContract, deployer, 1000);
 
 await addEnergy(energyContract, deployer, 1000);
-
-  
 
 console.log("EnergyContract deployed successfully!");
 
@@ -1771,8 +1659,6 @@ console.error("Revert reason:", error.reason);
 
 }
 
-  
-
 await energyContract.getLatestEthPrice();
 
 const newPrice = await energyContract.getCachedEthPrice();
@@ -1785,7 +1671,7 @@ const cost = await energyContract.calculateRequiredPayment(
 
 12,
 
-2000 * 10 ** 8
+2000 \* 10 \*\* 8
 
 );
 
@@ -1801,8 +1687,6 @@ console.log("Authorized parties count:", await energyContract.authorizedParties(
 
 }
 
-  
-
 main()
 
 .then(() => process.exit(0))
@@ -1814,68 +1698,68 @@ console.error(error);
 process.exit(1);
 
 });
-    ```
+```
+
 1. **Add Scripts to `package.json`**:
-    
-    ```json
-    {
-      "scripts": {
-        "deploy:local": "npx hardhat run scripts/deploy.js --network hardhat",
-        "deploy:sepolia": "npx hardhat run scripts/deploy-sepolia.js --network sepolia"
-      }
-    }
-    ```
-    
+
+   ```json
+   {
+     "scripts": {
+       "deploy:local": "npx hardhat run scripts/deploy.js --network hardhat",
+       "deploy:sepolia": "npx hardhat run scripts/deploy-sepolia.js --network sepolia"
+     }
+   }
+   ```
+
 2. **Configure GitHub Actions**:
-    - Create `.github/workflows/deploy.yml`:
-        
-        ```yaml
-        name: Deploy to Sepolia
-        
-        on:
-          push:
-            branches: [ main ]
-        
-        jobs:
-          deploy:
-            runs-on: ubuntu-latest
-            steps:
-              - uses: actions/checkout@v3
-              - name: Set up Node.js
-                uses: actions/setup-node@v3
-                with:
-                  node-version: 18
-              - name: Install dependencies
-                run: npm install
-              - name: Compile contracts
-                run: npx hardhat compile
-              - name: Deploy to Sepolia
-                run: npm run deploy:sepolia
-                env:
-                  SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
-                  PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
-                  ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
-        ```
-        
-    - Add secrets in GitHub repository settings.
+   - Create `.github/workflows/deploy.yml`:
+     ```yaml
+     name: Deploy to Sepolia
+
+     on:
+       push:
+         branches: [main]
+
+     jobs:
+       deploy:
+         runs-on: ubuntu-latest
+         steps:
+           - uses: actions/checkout@v3
+           - name: Set up Node.js
+             uses: actions/setup-node@v3
+             with:
+               node-version: 18
+           - name: Install dependencies
+             run: npm install
+           - name: Compile contracts
+             run: npx hardhat compile
+           - name: Deploy to Sepolia
+             run: npm run deploy:sepolia
+             env:
+               SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+               PRIVATE_KEY: ${{ secrets.PRIVATE_KEY }}
+               ETHERSCAN_API_KEY: ${{ secrets.ETHERSCAN_API_KEY }}
+     ```
+   - Add secrets in GitHub repository settings.
 
 ### 7. Test Deployment
 
 1. **Local**:
-    
-    ```bash
-    npx hardhat node
-    npm run deploy --network localhost
-    ```
-    
-    - Check `solarfarm_ui/config/addresses.json`.
+
+   ```bash
+   npx hardhat node
+   npm run deploy --network localhost
+   ```
+
+   - Check `solarfarm_ui/config/addresses.json`.
+
 2. **Sepolia**:
-    
-    ```bash
-    npm run deploy:sepolia
-    ```
-    
-    - Verify on [Sepolia Etherscan](https://sepolia.etherscan.io/).
+
+   ```bash
+   npm run deploy:sepolia
+   ```
+
+   - Verify on [Sepolia Etherscan](https://sepolia.etherscan.io/).
 
 ### 8. Troubleshooting
 

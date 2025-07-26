@@ -55,7 +55,6 @@ export default function Navbar() {
   const signingOutHandler = useCallback(async () => {
     try {
       await authContext.signOutHandler();
-      console.log('User signed out successfully');
       router.push('/login');
     } catch (error) {
       console.error('Error signing out:', error);

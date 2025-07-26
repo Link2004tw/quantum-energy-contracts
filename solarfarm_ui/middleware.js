@@ -2,12 +2,9 @@
 import { NextResponse } from "next/server";
 
 export async function middleware(req) {
-  console.log("ana fel middleware yasta");
   const url = req.nextUrl.clone();
   const token = req.cookies.get("__session")?.value;
-  console.log(req.cookies.get("__session").value);
   if (!token) {
-    console.log("no token yasta");
     url.pathname = "/unauthorized";
     return NextResponse.redirect(url);
   }
@@ -21,13 +18,11 @@ export async function middleware(req) {
     });
 
     if (!verifyResponse.ok) {
-      console.log("ma3lesh el denia darabet")
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);
     }
 
     const { role } = await verifyResponse.json();
-    console.log(role);
     if (role !== "admin") {
       url.pathname = "/unauthorized";
       return NextResponse.redirect(url);

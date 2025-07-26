@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 
 export async function POST(req) {
-  console.log("ana henak fel api");
   const { idToken  } = await req.json();
-  console.log(idToken);
   if (!idToken) {
     return NextResponse.json({ error: "Missing token" }, { status: 400 });
   }

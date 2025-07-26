@@ -21,7 +21,6 @@ export default function LoginPage() {
   });
 
   const submitHandler = async (user) => {
-    console.log("User data submitted:", user);
     try {
       const userCredentials = await signInWithEmailAndPassword(
         auth,
@@ -48,7 +47,6 @@ export default function LoginPage() {
       const userData = await getData(`users/${uid}`);
 
       if (!userData) {
-        console.log("No data found for user:", uid);
         alert("User data not found.");
         return;
       }
@@ -66,8 +64,7 @@ export default function LoginPage() {
 
       authContext.setSigner(signer);
 
-      console.log("User object created:", signer);
-
+      
       // 🔁 Redirect based on role
       if (userData.role === "admin") {
         router.push("/admin/dashboard"); // or wherever the admin panel is

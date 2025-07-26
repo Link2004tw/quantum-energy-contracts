@@ -26,7 +26,7 @@ export default function ProfilePage() {
   }, [user, router]);
 
   useEffect(() => {
-    console.log(user);
+    //console.log(user);
     const fetchBalance = async () => {
       if (user && user.ethereumAddress) {
         try {
@@ -58,7 +58,6 @@ export default function ProfilePage() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const accounts = await provider.send("eth_requestAccounts", []);
       const address = accounts[0];
-      console.log(address);
       const updatedUser = new User({
         uid: user.uid,
         email: user.email,

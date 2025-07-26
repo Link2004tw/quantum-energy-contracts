@@ -173,7 +173,6 @@ export const getLatestEthPrice = async (networkName = "hardhat") => {
     //const tx =
     await contract.getLatestEthPrice();
     //await tx.wait(); // Wait for transaction to mine and update cache
-    console.log("the error is not before here");
     const price = await contract.getCachedEthPrice();
     return price.toString(); // Return as string to avoid BigInt issues
   } catch (error) {
@@ -182,10 +181,7 @@ export const getLatestEthPrice = async (networkName = "hardhat") => {
       try {
         const iface = new ethers.Interface(CONTRACT_ABI);
         const decodedError = iface.parseError(error.data);
-        console.log(decodedError.args);
-        // throw new Error(
-        //   `Contract error: ${decodedError.name} ${JSON.stringify(decodedError.args)}`
-        // );
+        
       } catch (decodeError) {
         console.error("Could not decode revert reason:", decodeError);
       }
@@ -207,13 +203,10 @@ export const getCost = async (amount, networkName = "hardhat") => {
       throw new Error("Amount must be greater than zero");
     }
     const ethPrice = BigInt(parseInt(await getLatestEthPrice(networkName)));
-    console.log(ethPrice);
-    console.log("Latest ETH price:", ethPrice / BigInt(1e10));
     const price = await contract.calculateRequiredPayment(
       amount,
       ethPrice / BigInt(1e10)
     );
-    console.log("Price in wei:", price.toString());
     return ethers.formatUnits(price, 18); // Convert to ETH
   } catch (error) {
     throw new Error(`Error calculating cost: ${error.message}`);
@@ -260,7 +253,6 @@ export const getNonceFromUid = (uid) => {
   // Scale to 5-digit range (10000 to 99999)
   const nonce = 10000 + (hashNumber % 90000);
 
-  console.log("Derived nonce from UID:", nonce);
   return nonce.toString(); // Return as string
 };
 
@@ -299,7 +291,7 @@ export const getEthBalance = async (address, networkName = "hardhat") => {
     const provider = new ethers.JsonRpcProvider(targetConfig.rpcUrl);
     const balanceWei = await provider.getBalance(address);
     const balanceEth = ethers.formatEther(balanceWei);
-    console.log(`ETH Balance for ${address}: ${balanceEth} ETH`);
+    //console.log(`ETH Balance for ${address}: ${balanceEth} ETH`);
     return balanceEth;
   } catch (error) {
     console.error(`Error fetching ETH balance for ${address}:`, error.message);
@@ -315,7 +307,6 @@ export const revealPurchase = async (networkName = "hardhat", amount, user) => {
     if (!user || !user._ethereumAddress) {
       throw new Error("User Ethereum address is required");
     }
-    console.log("error is not before here");
     const contract = await getContract(
       networkName,
       CONTRACT_ADDRESS,
@@ -334,8 +325,7 @@ export const revealPurchase = async (networkName = "hardhat", amount, user) => {
     // Calculate required payment
     await contract.getLatestEthPrice(); // Ensure the contract is ready
     const ethPrice = await contract.getCachedEthPrice();
-    console.log("eth price in reveal purchase: ", ethPrice / BigInt(10e10));
-
+    
     const totalCostWei = await contract.calculateRequiredPayment(
       amount,
       ethPrice / BigInt(10e10)
@@ -410,7 +400,6 @@ export const getTransactions = async (networkName = "hardhat") => {
 };
 
 export const checkIfAuthorized = async (user) => {
-  console.log("Checking if user is authorized:", user);
   if (!user || !user._ethereumAddress) {
     throw new Error(
       "User is not authenticated or does not have an Ethereum address."
@@ -468,13 +457,10 @@ export const addEnergy = async (kwh, networkName = "hardhat") => {
       CONTRACT_ABI,
       true
     );
-    console.log("fel add energy yasta");
     const signer = await contract.runner.provider.getSigner();
     const signerAddress = await signer.getAddress();
-    console.log(signerAddress);
-
+    
     const ownerAddress = await getSolarFarm();
-    console.log(ownerAddress);
     if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
       alert("Only the contract owner (solar farm) can add energy");
       throw new Error("Only the contract owner can add energy");
@@ -483,8 +469,7 @@ export const addEnergy = async (kwh, networkName = "hardhat") => {
     // Step 1: Request to add energy
     const requestTx = await contract.requestAddEnergy(kwh);
     await requestTx.wait();
-    console.log(`Energy add request submitted: ${requestTx.hash}`);
-
+    
     // Step 2: Wait for ADD_ENERGY_DELAY (2 minutes = 120,000 ms)
     const ADD_ENERGY_DELAY = 2 * 60 * 1000; // 2 minutes in milliseconds
     alert(
@@ -495,7 +480,6 @@ export const addEnergy = async (kwh, networkName = "hardhat") => {
     // Step 3: Confirm adding energy
     const confirmTx = await contract.confirmAddEnergy(kwh);
     await confirmTx.wait();
-    console.log(`Energy added successfully: ${confirmTx.hash}`);
     alert(
       `Energy added successfully! ${kwh} kWh added to the pool. Transaction hash: ${confirmTx.hash}`
     );

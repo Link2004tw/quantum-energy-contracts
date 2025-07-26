@@ -3,7 +3,6 @@ import { adminAuth as admin } from "@/config/adminfirebase";
 
 export async function POST(req) {
   const token = req.headers.get("authorization")?.split("Bearer ")[1];
-  console.log("fel verify", token);
   if (!token) {
     return new Response(JSON.stringify({ error: "No token provided" }), {
       status: 401,

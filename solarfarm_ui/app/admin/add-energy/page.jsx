@@ -23,7 +23,6 @@ export default function AddEnergyPage() {
     setIsSubmitting(true);
     try {
       const { requestTxHash, confirmTxHash } = await addEnergy(Number(kwh));
-      console.log(`Request TX: ${requestTxHash}, Confirm TX: ${confirmTxHash}`);
       setKwh("");
     } catch (error) {
       console.error("Error adding energy:", error);

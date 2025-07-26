@@ -1,6 +1,5 @@
 export const truncateTransactionHash = (transactionHash) => {
   if (!transactionHash || !/^0x[a-fA-F0-9]{64}$/.test(transactionHash)) {
-    console.log(transactionHash);
     throw new Error("Invalid transaction hash");
   }
 
@@ -9,7 +8,6 @@ export const truncateTransactionHash = (transactionHash) => {
 
 export const truncateEthereumAddress = (address) => {
   if (!address || !/^0x[a-fA-F0-9]{40}$/.test(address)) {
-    console.log("Invalid address:", address);
     throw new Error("Invalid Ethereum address");
   }
 

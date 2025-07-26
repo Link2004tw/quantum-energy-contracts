@@ -29,11 +29,9 @@ export default function AuthWrapper({ children }) {
         const token = await user.getIdToken();
 
         if (!userData) {
-          console.log("No data found for user:", uid);
           alert("User data not found.");
           return;
         }
-        console.log(userData);
         const signer = new User({
           email: userData.email,
           username: userData.username,
@@ -45,7 +43,6 @@ export default function AuthWrapper({ children }) {
           role: userData.role, // assuming you added a "role" field in DB
         });
 
-        console.log("User is already signed in:", signer);
         setUser(signer);
         setIsLoggedIn(true);
       } else {
@@ -58,7 +55,6 @@ export default function AuthWrapper({ children }) {
   }, []);
 
   const setSigner = (user) => {
-    console.log("Setting user in context:", user);
     setUser(user);
     setIsLoggedIn(!!user); // Set isLoggedIn based on user presence
   };
@@ -67,7 +63,6 @@ export default function AuthWrapper({ children }) {
       await signOut(auth);
       setUser(null);
       setIsLoggedIn(false);
-      console.log("User signed out successfully");
     } catch (error) {
       console.error("Error signing out:", error);
     }

@@ -16,10 +16,8 @@ export default function SignUpPage() {
   const authContext = useAuth();
 
   const submitHandler = async (user) => {
-  console.log("User data submitted:", user);
   try {
     if (user instanceof User) {
-      console.log("Creating user with email:", user._email);
       // Sign up with Firebase Authentication
       const userCredentials = await createUserWithEmailAndPassword(
         auth,
@@ -41,7 +39,6 @@ export default function SignUpPage() {
         `users/${uid}`
       );
 
-      console.log("User signed up and data saved successfully:", uid);
       authContext.setSigner(user);
       router.push("/");
     } else {

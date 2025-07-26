@@ -19,22 +19,22 @@ const addEnergy = async (energyContract, signer, energy) => {
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  console.log("Deploying contracts with account:", deployer.address);
+  //console.log("Deploying contracts with account:", deployer.address);
 
   // Deploy MockV3Aggregator for local testing
   let priceFeedAddress;
   const network = await ethers.provider.getNetwork();
-  console.log("Network chainId:", network.chainId);
+  //console.log("Network chainId:", network.chainId);
   // Hardhat local network
   const MockV3Aggregator = await ethers.getContractFactory("MockV3Aggregator");
   const mockPriceFeed = await MockV3Aggregator.deploy(8, 2000 * 10 ** 8); // 8 decimals, 2000 USD/ETH
   await mockPriceFeed.waitForDeployment();
   priceFeedAddress = await mockPriceFeed.getAddress();
-  console.log("MockV3Aggregator deployed to:", priceFeedAddress);
+  //consol.log("MockV3Aggregator deployed to:", priceFeedAddress);
 
   // Deploy EnergyContract
   const EnergyContract = await ethers.getContractFactory("EnergyContract");
-  console.log("Deploying EnergyContract...");
+  //console.log("Deploying EnergyContract...");
   const energyContract = await EnergyContract.deploy(
     priceFeedAddress,
     deployer.address,
@@ -44,23 +44,20 @@ async function main() {
   );
   await energyContract.waitForDeployment();
   const contractAddress = await energyContract.getAddress();
-  console.log("EnergyContract deployed to:", contractAddress);
+  //consol.log("EnergyContract deployed to:", contractAddress);
 
   // Test solarFarm state variable
   const solarFarm = await energyContract.solarFarm();
-  console.log("solarFarm address:", solarFarm);
-  console.log(deployer.address, "is the solarFarm address:", solarFarm === deployer.address);
+  
   await addEnergy(energyContract, deployer, 1000);
   await addEnergy(energyContract, deployer, 1000);
 
-  console.log("EnergyContract deployed successfully!");
-  //console.log(await mockPriceFeed.latestRoundData());
   // Test getLatestEthPrice
   try {
     //console.log(await energyContract.getLatestEthPrice2());
     await energyContract.getLatestEthPrice();
     const ethPrice = await energyContract.getCachedEthPrice();
-    console.log("ETH/USD price:", ethers.formatUnits(ethPrice, 8));
+    // console.log("ETH/USD price:", ethers.formatUnits(ethPrice, 8));
   } catch (error) {
     console.error("Error calling getLatestEthPrice:", error);
     if (error.reason) {
@@ -70,17 +67,14 @@ async function main() {
 
   await energyContract.getLatestEthPrice();
   const newPrice = await energyContract.getCachedEthPrice();
-  console.log("New ETH/USD price:", ethers.formatUnits(newPrice, 8));
+  // console.log("New ETH/USD price:", ethers.formatUnits(newPrice, 8));
   //test cost calculation
   const cost = await energyContract.calculateRequiredPayment(
     12,
     2000 * 10 ** 8
   );
-  console.log("Cost for 12 kWh at $2000/ETH:", ethers.formatUnits(cost, 18));
-  console.log("available energy:", await energyContract.availableKWh());
   await energyContract.connect(deployer).authorizeParty("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
-  console.log("Party authorized successfully");
-  console.log("Authorized parties count:", await energyContract.authorizedParties("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"));
+  
 }
 
 main()

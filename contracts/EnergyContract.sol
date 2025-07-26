@@ -255,7 +255,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     function commitPurchase(
         bytes32 _commitmentHash
     ) external onlyAuthorizedParties whenNotPaused {
-        console.log("the sender is: %d", msg.sender);
+        //console.log("the sender is: %d", msg.sender);
         if (_commitmentHash == bytes32(0)) revert InvalidCommitmentHash();
         if (block.timestamp < lastCommitTime[msg.sender] + COMMIT_COOLDOWN)
             revert CommitmentCooldownActive(
@@ -288,9 +288,9 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         uint256 ethPriceUSDcents = _ethPriceUSD / 1e2; // Assuming _ethPriceUSD has 8 decimals
         uint256 totalCostWei = (totalCostUSDCents * 1e18) / ethPriceUSDcents;
         // Debug output: split into multiple console.log calls to avoid argument limit
-        console.log("totalCostUSDCents:", totalCostUSDCents);
-        console.log("ethPriceUSDcents:", ethPriceUSDcents);
-        console.log("totalCostWei:", totalCostWei);
+        //console.log("totalCostUSDCents:", totalCostUSDCents);
+        //console.log("ethPriceUSDcents:", ethPriceUSDcents);
+        //console.log("totalCostWei:", totalCostWei);
         return totalCostWei;
     }
 
@@ -345,10 +345,10 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
             gas: MAX_GAS_FOR_CALL
         }("");
         if (!sent) {
-            console.log(
-                "EnergyContract: PaymentFailed sending to:",
-                paymentReceiver
-            );
+            // console.log(
+            //     "EnergyContract: PaymentFailed sending to:",
+            //     paymentReceiver
+            // );
             revert PaymentFailed();
         }
         emit EnergyPurchased(
@@ -362,32 +362,32 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     }
 
     function withdrawRefunds() external whenNotPaused nonReentrant {
-        console.log("EnergyContract: withdrawRefunds called by:", msg.sender);
+        //console.log("EnergyContract: withdrawRefunds called by:", msg.sender);
         uint256 amount = pendingRefunds[msg.sender];
         if (amount == 0) {
-            console.log("EnergyContract: NoRefundsAvailable for:", msg.sender);
+            // console.log("EnergyContract: NoRefundsAvailable for:", msg.sender);
             revert NoRefundsAvailable();
         }
         pendingRefunds[msg.sender] = 0;
-        console.log("Sending refund of", amount, "to", msg.sender);
+        // console.log("Sending refund of", amount, "to", msg.sender);
 
         (bool sent, ) = payable(msg.sender).call{
             value: amount,
             gas: MAX_GAS_FOR_CALL
         }("");
         if (!sent) {
-            console.log(
-                "EnergyContract: PaymentFailed sending to:",
-                msg.sender
-            );
+            // console.log(
+            //     "EnergyContract: PaymentFailed sending to:",
+            //     msg.sender
+            // );
             revert PaymentFailed();
         }
-        console.log(
-            "EnergyContract: RefundWithdrawn for:",
-            msg.sender,
-            "amount:",
-            amount
-        );
+        // console.log(
+        //     "EnergyContract: RefundWithdrawn for:",
+        //     msg.sender,
+        //     "amount:",
+        //     amount
+        // );
         emit RefundWithdrawn(msg.sender, amount, block.timestamp);
     }
 

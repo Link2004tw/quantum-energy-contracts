@@ -81,8 +81,7 @@ describe("Complete Energy Trading Flow", function () {
     await expect(commitTx)
       .to.emit(energyContract, "EnergyPurchaseCommitted")
       .withArgs(buyer.address, commitmentHash, commitBlock.timestamp);
-    console.log("the sender is: %s", buyer.address);
-
+    
     // Step 4: Reveal purchase
     const ethPriceUSD = 2000;
     const payment = await calculatePayment(kWhToBuy, ethPriceUSD);
