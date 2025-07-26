@@ -1,6 +1,6 @@
 # Security Document for EnergyContract
 
-This document outlines the threat model, security assumptions, known limitations, and audit checklist for the `EnergyContract` smart contract. It details the attacks mitigated, trusted components, remaining risks, and key areas for auditors to review.
+This document outlines the threat model, security assumptions, known limitations, and audit checklist for the `EnergyContract` smart contract. It details the attacks mitigated, trusted components, remaining risks, and key areas for auditors to review. Additionally, it provides instructions for creating an admin account in Firebase to support role-based access control in the `solarfarm_ui` application.
 
 ## Threat Model: What Attacks Are You Protecting Against?
 
@@ -67,8 +67,8 @@ Despite mitigations, some risks and limitations persist:
     - Prolonged Chainlink downtime (>15 minutes) could cause the cached price to become stale, halting purchases (`PriceFeedStale` error).
     - While Chainlink's decentralized oracles reduce manipulation risk, a coordinated attack on the oracle network could provide incorrect prices, though this is unlikely due to Chainlink's design.
 - **Owner Centralization Risk**:
-- The solar farm (owner) has significant control, including pausing the contract, managing authorizations, and updating the `paymentReceiver`. A compromised or malicious owner could disrupt operations or misdirect funds.
-- Mitigation requires governance mechanisms (e.g., multi-sig ownership), which are not currently implemented.
+    - The solar farm (owner) has significant control, including pausing the contract, managing authorizations, and updating the `paymentReceiver`. A compromised or malicious owner could disrupt operations or misdirect funds.
+    - Mitigation requires governance mechanisms (e.g., multi-sig ownership), which are not currently implemented.
 - **Gas Limit Risks**:
     - The `MAX_GAS_FOR_CALL` (5,000,000 gas) may be insufficient for complex `paymentReceiver` operations, causing payment failures.
     - Batch revocation (`revokeAuthorizationsBatch`) could hit gas limits for large lists, though `MAX_AUTHORIZED_PARTIES` (100) mitigates this.
@@ -126,6 +126,95 @@ Auditors should prioritize the following areas to ensure the contract's security
 - **Upgradeability**:
     - Note that the contract is not upgradeable. Auditors should evaluate whether critical parameters (e.g., `PRICE_PER_KWH_USD_CENTS`, `STALENESS_THRESHOLD`) need upgradability for future flexibility.
 
+## Admin Account Creation
+
+To enable role-based access control in the `solarfarm_ui` application, admin accounts are created manually in Firebase Authentication and assigned the `admin` role via a script (`solarfarm_ui/setInitialAdmin.js`). This role is verified by the `/api/auth/verify-role` endpoint (`app/api/auth/verify-role/route.ts`) to grant access to admin routes (e.g., `/admin/add-energy`, `/admin/update-price`). Below are the steps to create an admin account:
+
+1. **Create an Account in Firebase**:
+    
+    - Navigate to the Firebase Console at [console.firebase.google.com](https://console.firebase.google.com/).
+    - Select your project (configured in `solarfarm_ui/.env` with `NEXT_PUBLIC_FIREBASE_PROJECT_ID`).
+    - Go to **Build > Authentication** and click **Users**.
+    - Click **Add user** to create a new account:
+        - **Email**: Enter a valid email (e.g., `admin@example.com`).
+        - **Password**: Set a secure password (e.g., at least 8 characters, including letters, numbers, and symbols).
+        - **User UID**: Note the generated UID (e.g., `abc123xyz789`) after saving the user.
+    - Enable Email/Password authentication if not already enabled (under **Sign-in method**).
+2. **Update the UID in setInitialAdmin.js**:
+    
+    - Open `solarfarm_ui/setInitialAdmin.js` in your code editor.
+    - Update the script to include the UID from the Firebase Console:
+        
+        ```javascript
+        // solarfarm_ui/setInitialAdmin.js
+        import { adminAuth } from './config/adminAuth';
+        
+        async function setInitialAdmin() {
+          const adminUid = 'abc123xyz789'; // Replace with the UID from Firebase Console
+          try {
+            await adminAuth.setCustomUserClaims(adminUid, { role: 'admin' });
+            console.log(`Admin role set for UID: ${adminUid}`);
+          } catch (error) {
+            console.error('Error setting admin role:', error);
+          }
+        }
+        
+        setInitialAdmin();
+        ```
+        
+    - Ensure `config/adminAuth.ts` is correctly configured with the Firebase Admin SDK credentials (`solarfarmsystem-firebase-adminsdk-fbsvc-b3714a635d.json`).
+3. **Run the Script**:
+    
+    - In the `solarfarm_ui` directory, ensure dependencies are installed:
+        
+        ```bash
+        npm install
+        ```
+        
+    - Add a script to `package.json` if not already present:
+        
+        ```json
+        {
+          "scripts": {
+            "setInitialAdmin": "node setInitialAdmin.js"
+          }
+        }
+        ```
+        
+    - Run the script to set the `admin` role:
+        
+        ```bash
+        npm run setInitialAdmin
+        ```
+        
+    - Verify the output in the console (e.g., `Admin role set for UID: abc123xyz789`).
+    - Check the Firebase Console under **Authentication > Users** to confirm the user has the custom claim `role: admin`.
+4. **Test Admin Access**:
+    
+    - Start the `solarfarm_ui` application:
+        
+        ```bash
+        npm run dev
+        ```
+        
+    - Navigate to `http://localhost:3000/login` and sign in with the admin account (`admin@example.com`).
+    - Access an admin route (e.g., `http://localhost:3000/admin/add-energy`).
+    - Verify that `/api/auth/verify-role` returns `{ role: "admin" }` (inspect network requests in browser dev tools).
+    - Test a non-admin account to ensure redirection to `/unauthorized` (`app/unauthorized/page.tsx`).
+5. **Security Considerations**:
+    
+    - Protect `solarfarmsystem-firebase-adminsdk-fbsvc-b3714a635d.json` and `solarfarm_ui/.env` in `.gitignore`:
+        
+        ```plaintext
+        .env
+        *.json
+        ```
+        
+    - Restrict access to `setInitialAdmin.js` to authorized developers.
+    - Use strong, unique passwords for admin accounts.
+    - Monitor Firebase Authentication logs for suspicious activity.
+    - Consider implementing multi-factor authentication (MFA) for admin accounts in Firebase.
+
 ## Conclusion
 
-The `EnergyContract` mitigates key threats like front-running, reentrancy, and price manipulation through the commit-reveal pattern, OpenZeppelin protections, and Chainlink validation. It trusts Chainlink, OpenZeppelin, and the Ethereum blockchain but remains vulnerable to owner centralization, prolonged Chainlink downtime, and scalability limits. Auditors should focus on commit-reveal logic, price feed reliability, authorization management, and gas efficiency to ensure robustness.
+The `EnergyContract` mitigates key threats like front-running, reentrancy, and price manipulation through the commit-reveal pattern, OpenZeppelin protections, and Chainlink validation. It trusts Chainlink, OpenZeppelin, and the Ethereum blockchain but remains vulnerable to owner centralization, prolonged Chainlink downtime, and scalability limits. Admin accounts, critical for managing restricted functions in `solarfarm_ui`, are securely created via Firebase and assigned roles using `setInitialAdmin.js`. Auditors should focus on commit-reveal logic, price feed reliability, authorization management, and gas efficiency to ensure robustness.
