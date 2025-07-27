@@ -1,12 +1,14 @@
-//import  from 'react';
-import { getAvailableEnergy, getTransactions, getEthBalance, getSolarFarm } from '@/utils/contract';
+import { getAvailableEnergy, getTransactions, getEthBalance, getSolarFarm, isPaused } from '@/utils/contract';
 import TransactionList from './TransactionList';
+import ClientPrimaryButton from './ClientPrimaryButton';
 
 export default async function AdminPage() {
   let availableEnergy = 'N/A';
   let transactions = [];
   let balance = 'N/A';
+  let paused = false;
 
+  
   try {
     availableEnergy = (await getAvailableEnergy()).toString(); // Convert BigNumber to string
     const address = await getSolarFarm();
@@ -23,12 +25,21 @@ export default async function AdminPage() {
     console.error('Error fetching transactions:', error);
     transactions = [new Transaction({ index: 0, error: 'Failed to fetch transactions' })];
   }
+  
+  try{
+    paused = (await isPaused());
+  }catch(error){
+    console.log("cannot get paused");
+    console.log(error);
+  }
 
+  
   return (
     <>
       <div>Hello admin</div>
       <div>Available Energy: {availableEnergy} kWh</div>
       <div>Balance: {balance} eth</div>
+      <ClientPrimaryButton paused={paused} />
       <TransactionList transactions={transactions} />
     </>
   );

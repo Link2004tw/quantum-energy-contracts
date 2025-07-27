@@ -506,3 +506,92 @@ export const addEnergy = async (kwh, networkName = "hardhat") => {
     throw new Error(`Error adding energy: ${errorMessage}`);
   }
 };
+
+// pause function 
+export const pauseContract = async (networkName = "hardhat") => {
+  try {
+    const contract = await getContract(
+      networkName,
+      CONTRACT_ADDRESS,
+      CONTRACT_ABI,
+      true
+    );
+    const signer = await contract.runner.provider.getSigner();
+    const signerAddress = await signer.getAddress();
+    
+    const ownerAddress = await getSolarFarm();
+    if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
+      alert("Only the contract owner (solar farm) can pause the contract");
+      throw new Error("Only the contract owner can pause the contract");
+    }
+
+    const tx = await contract.pause();
+    const receipt = await tx.wait();
+    alert(`Contract paused successfully! Transaction hash: ${receipt.hash}`);
+    return receipt.hash;
+  } catch (error) {
+    console.error("Error pausing contract:", error);
+    let errorMessage = error.reason || error.message || "Failed to pause contract";
+    if (error.data) {
+      try {
+        const iface = new ethers.Interface(CONTRACT_ABI);
+        const decodedError = iface.parseError(error.data);
+        errorMessage = `${decodedError.name}: ${JSON.stringify(decodedError.args)}`;
+      } catch (decodeError) {
+        console.error("Could not decode revert reason:", decodeError);
+      }
+    }
+    alert(`Error pausing contract: ${errorMessage}`);
+    throw new Error(`Error pausing contract: ${errorMessage}`);
+  }
+};
+
+export const unpauseContract = async (networkName = "hardhat") => {
+  try {
+    const contract = await getContract(
+      networkName,
+      CONTRACT_ADDRESS,
+      CONTRACT_ABI,
+      true
+    );
+    const signer = await contract.runner.provider.getSigner();
+    const signerAddress = await signer.getAddress();
+    
+    const ownerAddress = await getSolarFarm();
+    if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
+      alert("Only the contract owner (solar farm) can unpause the contract");
+      throw new Error("Only the contract owner can unpause the contract");
+    }
+
+    const tx = await contract.unpause();
+    const receipt = await tx.wait();
+    alert(`Contract unpaused successfully! Transaction hash: ${receipt.hash}`);
+    return receipt.hash;
+  } catch (error) {
+    console.error("Error unpausing contract:", error);
+    let errorMessage = error.reason || error.message || "Failed to unpause contract";
+    if (error.data) {
+      try {
+        const iface = new ethers.Interface(CONTRACT_ABI);
+        const decodedError = iface.parseError(error.data);
+        errorMessage = `${decodedError.name}: ${JSON.stringify(decodedError.args)}`;
+      } catch (decodeError) {
+        console.error("Could not decode revert reason:", decodeError);
+      }
+    }
+    alert(`Error unpausing contract: ${errorMessage}`);
+    throw new Error(`Error unpausing contract: ${errorMessage}`);
+  }
+};
+
+export const isPaused = async () => {
+  
+  const contract = await getContract(
+      "hardhat",
+      CONTRACT_ADDRESS,
+      CONTRACT_ABI,
+      false
+    );
+
+    return await contract.paused();
+}
