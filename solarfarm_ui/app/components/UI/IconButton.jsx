@@ -6,7 +6,6 @@ const IconButton = ({
   label,
   onClick,
   className = "",
-  size = "6",
   disabled = false,
 }) => {
   // Map size to Tailwind width/height classes for the icon

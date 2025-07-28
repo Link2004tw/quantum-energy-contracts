@@ -69,7 +69,7 @@ export async function POST(req) {
     console.log(existingAddresses);
     // Check which addresses already exist
     const results = addresses.map((ethAddress) => {
-      const trimmedAddress = ethAddress.trim();
+      const trimmedAddress = ethAddress.trim().toLowerCase();
       const exists =
         Array.isArray(existingAddresses) &&
         existingAddresses.includes(trimmedAddress);

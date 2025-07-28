@@ -5,13 +5,14 @@ import { useAuth } from "../store";
 import { getData } from "@/utils/databaseUtils";
 import CommittedOrders from "@/models/commitedOrders";
 import OrderItem from "./OrderItem";
+import { useRouter } from "next/navigation";
 
 export default function OrdersList() {
   const user = useAuth().user;
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const router = useRouter();
   const fetchOrders = useCallback(async () => {
     if (!user || !user._uid) {
       setError("User not authenticated or UID mismatch");
@@ -53,6 +54,11 @@ export default function OrdersList() {
     fetchOrders();
   }, [fetchOrders]);
 
+  if(!user){
+
+    //router.push("/login");
+    return;
+  }
   if (loading) {
     return <div>Loading orders...</div>;
   }

@@ -129,8 +129,11 @@ export default function BuySolarPage() {
     try {
       // Check authorization
       const isAuthorized = await checkIfAuthorized(user);
+      console.log(isAuthorized);
       if (!isAuthorized) {
-        throw new Error("You are not authorized to make purchases. Please contact support.");
+        alert("You are not Authorized please wait till the admin authorizes your wallet");
+        return;
+        //throw new Error("You are not authorized to make purchases. Please contact support.");
       }
 
       const parsedAmount = parseInt(amount);

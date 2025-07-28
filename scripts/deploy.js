@@ -76,9 +76,9 @@ async function main() {
   await energyContract.connect(deployer).authorizeParty("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
   const answer = await energyContract.checkAuthState("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
   console.log(answer);
-  await energyContract.connect(deployer).unAuthorizeParty("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
-  const answer2 = await energyContract.checkAuthState("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
-  console.log(answer2);
+  //await energyContract.connect(deployer).unAuthorizeParty("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+  //const answer2 = await energyContract.checkAuthState("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
+  //console.log(answer2);
   //await energyContract.connect(deployer).authorizeParty("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
   
 }

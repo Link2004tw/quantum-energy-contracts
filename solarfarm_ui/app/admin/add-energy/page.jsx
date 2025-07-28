@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/store";
 import PrimaryButton from "@/app/components/UI/PrimaryButton"; //from '@/components/UI/PrimaryButton';
 import { addEnergy } from "@/utils/contract";
 import Card from "@/app/components/Layout/Card";
 import ProgressBar from "./ProgressBar";
+import { saveData } from "@/utils/databaseUtils";
+import EnergyTransaction from "@/models/energyTransaction";
 
 export default function AddEnergyPage() {
   const { user, isLoggedIn } = useAuth();
@@ -22,15 +23,32 @@ export default function AddEnergyPage() {
 
     setIsSubmitting(true);
     try {
-      const { requestTxHash, confirmTxHash } = await addEnergy(Number(kwh));
+      const energyAmount = Number(kwh);
+
+      const { requestTxHash, confirmTxHash } = await addEnergy(energyAmount);
+
+      const transaction = new EnergyTransaction({
+        energyAmountKwh: energyAmount,
+        reqHash: requestTxHash,
+        conHash: confirmTxHash,
+      });
+
+      await saveData(transaction, `/energyTransactions/${transaction.transactionId}`);
+
       setKwh("");
+      alert("Energy transaction saved successfully!");
     } catch (error) {
       console.error("Error adding energy:", error);
-      // Error alert is handled in addEnergy
+      alert("Failed to add energy transaction.");
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (!isLoggedIn || !user) {
+    router.push("/login");
+    return null;
+  }
 
   if (!isLoggedIn || !user) {
     return null; // Render nothing while redirecting

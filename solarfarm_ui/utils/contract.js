@@ -370,15 +370,14 @@ export const getTransactions = async (networkName = "hardhat") => {
       try {
         const tx = await contract.transactions(i);
         transactions.push(
-          new Transaction({
+          (new Transaction({
             index: i,
             buyer: tx.buyer,
-            seller: tx.seller,
             kWh: tx.kWh.toString(),
             pricePerKWhUSD: tx.pricePerKWhUSD.toString(),
             ethPriceUSD: tx.ethPriceUSD.toString(),
             timestamp: Number(tx.timestamp),
-          })
+          }))
         );
       } catch (error) {
         console.error(`Error fetching transaction at index ${i}:`, error);

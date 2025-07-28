@@ -1,16 +1,13 @@
 "use client";
 
-import React from 'react';
-import Card from './components/Layout/Card';
-import SigningForm from './components/Layout/SigningForm';
-import UnderlineButton from './components/UI/UnderlineButton';
-//import Card from '../components/Card';
-//import SigningForm from '../components/SigningForm';
-//import UnderlineButton from '../components/UnderlineButton';
+import React from "react";
+import Card from "./components/Layout/Card";
+import SigningForm from "./components/Layout/SigningForm";
+import UnderlineButton from "./components/UI/UnderlineButton";
 
 export default function Home() {
   const handleSignSubmit = (data) => {
-    console.log('Sign form submitted:', data);
+    console.log("Sign form submitted:", data);
   };
 
   return (
@@ -29,10 +26,15 @@ export default function Home() {
             harness the power of the sun!
           </p>
           <div className=" flex justify-center items-center">
-          <UnderlineButton
-            title="Get Started"
-            onClick={() => window.scrollTo({ top: document.getElementById('cta').offsetTop, behavior: 'smooth' })}
-          />
+            <UnderlineButton
+              title="Get Started"
+              onClick={() =>
+                window.scrollTo({
+                  top: document.getElementById("cta").offsetTop,
+                  behavior: "smooth",
+                })
+              }
+            />
           </div>
         </section>
 
@@ -43,13 +45,19 @@ export default function Home() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 justify-items-center">
             <Card title="Real-Time Monitoring">
-              <p className='text-secondary-700 font-bold'>Track your solar farm's performance with live data updates.</p>
+              <p className="text-secondary-700 font-bold">
+                Track your solar farm's performance with live data updates.
+              </p>
             </Card>
             <Card title="User-Friendly Dashboard">
-              <p className='text-secondary-700 font-bold'>Access intuitive controls and insights for efficient management.</p>
+              <p className="text-secondary-700 font-bold">
+                Access intuitive controls and insights for efficient management.
+              </p>
             </Card>
             <Card title="Secure Blockchain Integration">
-              <p className='text-secondary-700 font-bold'>Leverage Ethereum for transparent and secure transactions.</p>
+              <p className="text-secondary-700 font-bold">
+                Leverage Ethereum for transparent and secure transactions.
+              </p>
             </Card>
           </div>
         </section>
@@ -57,8 +65,8 @@ export default function Home() {
         {/* Call-to-Action Section */}
         <section id="cta" className="py-16 w-full flex justify-center">
           <Card title="Join Us Today">
-         <SigningForm mode='signUp' onSubmit={handleSignSubmit} />
-         </Card>
+            <SigningForm mode="signUp" onSubmit={handleSignSubmit} />
+          </Card>
         </section>
       </main>
     </div>

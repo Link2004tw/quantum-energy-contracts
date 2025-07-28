@@ -51,36 +51,45 @@ export default function SigningForm({
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const changeWalletHandler = async () => {
-    if (!window.ethereum) {
-      setErrorMessage(
-        "MetaMask is not installed. Please install it to continue."
-      );
-      return;
-    }
-    setIsConnecting(true);
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.send("eth_requestAccounts", []);
-      const address = accounts[0];
-      const updatedUser = new User({
-        uid: user.uid,
-        email: user.email,
-        username: user.username,
-        birthday: user.birthday,
-        password: user._password,
-        ethereumAddress: address,
-        energy: user.energy,
-      });
-      //console.log("Updated user:", updatedUser);
-      alert("Wallet changed successfully");
-    } catch (error) {
-      console.error("Error connecting to MetaMask:", error);
-      setErrorMessage(error.message || "Failed to connect to MetaMask");
-    } finally {
-      setIsConnecting(false);
-    }
-  };
+  // const changeWalletHandler = async (e) => {
+  //   e.preventDefault()
+  //   if (!window.ethereum) {
+  //     setErrorMessage(
+  //       "MetaMask is not installed. Please install it to continue."
+  //     );
+  //     return;
+  //   }
+  //   setIsConnecting(true);
+  //   try {
+  //     const provider = new ethers.BrowserProvider(window.ethereum);
+  //     const accounts = await provider.send("eth_requestAccounts", []);
+  //     const address = accounts[0];
+  //      setFormData({
+  //         email: formData,
+  //         password: "",
+  //         confirmPassword: "",
+  //         username: "",
+  //         birthday: "",
+  //         ethereumAddress: "",
+  //       });
+  //     const updatedUser = new User({
+  //       uid: user.uid,
+  //       email: user.email,
+  //       username: user.username,
+  //       birthday: user.birthday,
+  //       password: user._password,
+  //       ethereumAddress: address,
+  //       energy: user.energy,
+  //     });
+  //     //console.log("Updated user:", updatedUser);
+  //     alert("Wallet changed successfully");
+  //   } catch (error) {
+  //     console.error("Error connecting to MetaMask:", error);
+  //     setErrorMessage(error.message || "Failed to connect to MetaMask");
+  //   } finally {
+  //     setIsConnecting(false);
+  //   }
+  // };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -157,7 +166,8 @@ export default function SigningForm({
     }
   };
 
-  const handleConnectWallet = async () => {
+  const handleConnectWallet = async (e) => {
+    e.preventDefault();
     if (!window.ethereum) {
       setErrorMessage(
         "MetaMask is not installed. Please install it to continue."
@@ -278,7 +288,7 @@ export default function SigningForm({
               Connected Wallet:{" "}
               {truncateEthereumAddress(formData.ethereumAddress)}
               <div className="pt-4">
-                <PrimaryButton title="Change Wallet" onClick={changeWalletHandler} />
+                <PrimaryButton title="Change Wallet" onClick={handleConnectWallet} />
               </div>
             </div>
           ) : (

@@ -1,12 +1,16 @@
 import { getAvailableEnergy, getTransactions, getEthBalance, getSolarFarm, isPaused } from '@/utils/contract';
-import TransactionList from './TransactionList';
+import TransactionList from './orders/TransactionList';
 import ClientPrimaryButton from './ClientPrimaryButton';
+import EnergyTransactionsList from './energy/EnergyTransactionsList';
+import { getData } from '@/utils/databaseUtils';
+import { Transaction } from '@/models/transaction';
 
 export default async function AdminPage() {
   let availableEnergy = 'N/A';
   let transactions = [];
   let balance = 'N/A';
   let paused = false;
+  let energyTransactions = [];
 
   
   try {
@@ -20,7 +24,7 @@ export default async function AdminPage() {
   }
 
   try {
-    transactions = await getTransactions();
+    transactions = (await getTransactions()).map((transaction) => transaction.toJSON());
   } catch (error) {
     console.error('Error fetching transactions:', error);
     transactions = [new Transaction({ index: 0, error: 'Failed to fetch transactions' })];
@@ -41,6 +45,7 @@ export default async function AdminPage() {
       <div>Balance: {balance} eth</div>
       <ClientPrimaryButton paused={paused} />
       <TransactionList transactions={transactions} />
+      <EnergyTransactionsList />
     </>
   );
 }
