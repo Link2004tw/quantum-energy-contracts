@@ -6,7 +6,6 @@ class User {
     birthday,
     ethereumAddress,
     uid,
-    token,
     energy = 0,
   }) {
     this._email = email || "";
@@ -18,7 +17,6 @@ class User {
       : null;
     this._uid = uid;
     this._energy = energy;
-    this._token = token
   }
 
   // Validate Ethereum address (basic check for 0x + 40 hex characters)
@@ -48,11 +46,13 @@ class User {
   get energy() {
     return this._energy;
   }
-  get token() {
-    return this._token
-  }
+  
   set energy(amount){
     this._energy = amount;
+  }
+
+  get uid() {
+    return this._uid;
   }
 
   // Exclude password from serialization for security
@@ -63,7 +63,7 @@ class User {
       birthday: this._birthday ? this._birthday.toDateString() : null,
       ethereumAddress: this._ethereumAddress,
       energy: this._energy,
-      token: this._token
+      
     };
   }
 }

@@ -57,7 +57,6 @@ export default function LoginPage() {
         birthday: new Date(userData.birthday),
         ethereumAddress: userData.ethereumAddress,
         uid: uid,
-        token: token,
         energy: userData.energy,
         role: userData.role, // assuming you added a "role" field in DB
       });

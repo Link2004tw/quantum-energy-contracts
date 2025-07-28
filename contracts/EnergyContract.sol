@@ -21,7 +21,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     uint256 public constant COMMIT_REVEAL_WINDOW = 5 minutes; // Commitment reveal window
     //uint256 public constant COMMIT_COOLDOWN = 5 minutes; // Cooldown between commitments
     uint256 public constant COMMIT_COOLDOWN = 5 minutes; // Cooldown between commitments
-    
+
     uint256 public constant MAX_AUTHORIZED_PARTIES = 100; // Max authorized parties
     uint256 public constant MAX_GAS_FOR_CALL = 5_000_000; // Gas limit for external calls
     //last failure timestamp for Chainlink price feed
@@ -74,6 +74,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     mapping(address => uint256) public pendingRefunds; // Tracks pending refunds
     mapping(address => uint256) public lastAddEnergyRequest; // Tracks last energy add request
     mapping(uint256 => Transaction) public transactions; // Stores transactions
+    //mapping(string => address) public uids; don't know if I will use it
     uint256 public transactionCount; // Transaction counter
     uint256 public authorizedPartyCount; // Authorized party counter
     address[] private authorizedPartyList; // List of authorized parties
@@ -193,8 +194,12 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     }
 
     // Revokes authorizations in batches for gas efficiency
-    function revokeAuthorizationsBatch(uint256 startIndex, uint256 batchSize) external onlyOwner {
-        if (startIndex >= authorizedPartyList.length || batchSize == 0) revert InvalidBatchIndex(startIndex, authorizedPartyList.length);
+    function revokeAuthorizationsBatch(
+        uint256 startIndex,
+        uint256 batchSize
+    ) external onlyOwner {
+        if (startIndex >= authorizedPartyList.length || batchSize == 0)
+            revert InvalidBatchIndex(startIndex, authorizedPartyList.length);
         uint256 endIndex = startIndex + batchSize;
         if (endIndex > authorizedPartyList.length)
             endIndex = authorizedPartyList.length;
@@ -207,7 +212,9 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
             }
         }
         // Rebuild array to remove marked entries
-        address[] memory newList = new address[](authorizedPartyList.length - removedCount);
+        address[] memory newList = new address[](
+            authorizedPartyList.length - removedCount
+        );
         uint256 newIndex = 0;
         for (uint256 i = 0; i < authorizedPartyList.length; i++) {
             if (authorizedPartyList[i] != address(0)) {
@@ -231,6 +238,15 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
             revert InsufficientEnergyAvailable(_kWh, MAX_KWH_PER_PURCHASE);
         lastAddEnergyRequest[msg.sender] = block.timestamp;
         emit EnergyAddRequested(solarFarm, _kWh, block.timestamp);
+    }
+
+    // Checks the authorization status of a party
+    function checkAuthState(
+        address _party
+    ) external view returns (bool isAuthorized) {
+        console.log("checking");
+        if (_party == address(0)) revert InvalidPartyAddress();
+        return authorizedParties[_party]; // Returns false if _party is not authorized
     }
 
     // Confirms adding energy after delay
@@ -433,44 +449,49 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         return priceLastUpdated;
     }
 
+    function getLatestEthPrice() public returns (uint256) {
+        // Try Chainlink first
+        (
+            uint80 roundId,
+            int256 price,
+            ,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        ) = priceFeed.latestRoundData();
 
-function getLatestEthPrice() public returns (uint256) {
-    // Try Chainlink first
-    (uint80 roundId, int256 price, , uint256 updatedAt, uint80 answeredInRound) = priceFeed.latestRoundData();
-    
-    // Check if Chainlink data is valid
-    bool isChainlinkValid = true;
-    if (price <= 0) {
-        isChainlinkValid = false; // Invalid price
-    } else if (updatedAt <= block.timestamp - STALENESS_THRESHOLD) {
-        isChainlinkValid = false; // Stale data
-    } else if (answeredInRound < roundId) {
-        isChainlinkValid = false; // Incomplete round
-    } else if (price < 100 * 10**8 || price > 10000 * 10**8) {
-        isChainlinkValid = false; // Out-of-bounds price
-        revert InvalidPriceBounds();
-    }
+        // Check if Chainlink data is valid
+        bool isChainlinkValid = true;
+        if (price <= 0) {
+            isChainlinkValid = false; // Invalid price
+        } else if (updatedAt <= block.timestamp - STALENESS_THRESHOLD) {
+            isChainlinkValid = false; // Stale data
+        } else if (answeredInRound < roundId) {
+            isChainlinkValid = false; // Incomplete round
+        } else if (price < 100 * 10 ** 8 || price > 10000 * 10 ** 8) {
+            isChainlinkValid = false; // Out-of-bounds price
+            revert InvalidPriceBounds();
+        }
 
-    if (isChainlinkValid) {
-        // Valid Chainlink data: update cache and return price
-        uint256 adjustedPrice = uint256(price) * 10**10;
-        cachedEthPrice = adjustedPrice;
-        priceLastUpdated = block.timestamp;
-        emit PriceCacheUpdated(adjustedPrice, block.timestamp);
-        return adjustedPrice;
-    } else {
-        // Chainlink down: check if cached value is stale
-        if (block.timestamp > priceLastUpdated + STALENESS_THRESHOLD) {
-            revert PriceFeedStale(priceLastUpdated, STALENESS_THRESHOLD);
+        if (isChainlinkValid) {
+            // Valid Chainlink data: update cache and return price
+            uint256 adjustedPrice = uint256(price) * 10 ** 10;
+            cachedEthPrice = adjustedPrice;
+            priceLastUpdated = block.timestamp;
+            emit PriceCacheUpdated(adjustedPrice, block.timestamp);
+            return adjustedPrice;
+        } else {
+            // Chainlink down: check if cached value is stale
+            if (block.timestamp > priceLastUpdated + STALENESS_THRESHOLD) {
+                revert PriceFeedStale(priceLastUpdated, STALENESS_THRESHOLD);
+            }
+            // Return cached value if available
+            if (cachedEthPrice != 0) {
+                return cachedEthPrice;
+            }
+            // No valid cache: revert
+            revert InvalidEthPrice();
         }
-        // Return cached value if available
-        if (cachedEthPrice != 0) {
-            return cachedEthPrice;
-        }
-        // No valid cache: revert
-        revert InvalidEthPrice();
     }
-}
 
     function bytes32ToString(
         bytes32 _bytes32

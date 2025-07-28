@@ -734,6 +734,25 @@
 		"inputs": [
 			{
 				"internalType": "address",
+				"name": "_party",
+				"type": "address"
+			}
+		],
+		"name": "checkAuthState",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "isAuthorized",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
 				"name": "_buyer",
 				"type": "address"
 			}

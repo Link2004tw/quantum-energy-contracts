@@ -5,7 +5,11 @@ import { database as db, auth } from "@/config/firebase";
 export const getData = async (url) => {
   try {
     // Check if user is authenticated
+    
     const user = auth.currentUser;
+    
+    //const adminUser = adminAuth.getUser()
+    //console.log(adminUser);
     if (!user) {
       throw new Error("User not authenticated");
     }

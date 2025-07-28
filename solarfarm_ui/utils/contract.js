@@ -181,7 +181,6 @@ export const getLatestEthPrice = async (networkName = "hardhat") => {
       try {
         const iface = new ethers.Interface(CONTRACT_ABI);
         const decodedError = iface.parseError(error.data);
-        
       } catch (decodeError) {
         console.error("Could not decode revert reason:", decodeError);
       }
@@ -325,7 +324,7 @@ export const revealPurchase = async (networkName = "hardhat", amount, user) => {
     // Calculate required payment
     await contract.getLatestEthPrice(); // Ensure the contract is ready
     const ethPrice = await contract.getCachedEthPrice();
-    
+
     const totalCostWei = await contract.calculateRequiredPayment(
       amount,
       ethPrice / BigInt(10e10)
@@ -400,7 +399,8 @@ export const getTransactions = async (networkName = "hardhat") => {
 };
 
 export const checkIfAuthorized = async (user) => {
-  if (!user || !user._ethereumAddress) {
+  console.log(user.ethereumAddress, "hi");
+  if (!user || !user.ethereumAddress) {
     throw new Error(
       "User is not authenticated or does not have an Ethereum address."
     );
@@ -411,7 +411,15 @@ export const checkIfAuthorized = async (user) => {
     CONTRACT_ABI,
     true
   );
-  return await contract.authorizedParties(user._ethereumAddress);
+  try {
+    console.log(user.ethereumAddress ? "mawgoud" : "mesh mawgoud");
+    const answer = await contract.checkAuthState(user.ethereumAddress);
+    console.log("answer is");
+    console.log(answer);
+    return answer;
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 // this is for testing purposes only. for admin use
@@ -459,7 +467,7 @@ export const addEnergy = async (kwh, networkName = "hardhat") => {
     );
     const signer = await contract.runner.provider.getSigner();
     const signerAddress = await signer.getAddress();
-    
+
     const ownerAddress = await getSolarFarm();
     if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
       alert("Only the contract owner (solar farm) can add energy");
@@ -469,7 +477,7 @@ export const addEnergy = async (kwh, networkName = "hardhat") => {
     // Step 1: Request to add energy
     const requestTx = await contract.requestAddEnergy(kwh);
     await requestTx.wait();
-    
+
     // Step 2: Wait for ADD_ENERGY_DELAY (2 minutes = 120,000 ms)
     const ADD_ENERGY_DELAY = 2 * 60 * 1000; // 2 minutes in milliseconds
     alert(
@@ -507,7 +515,7 @@ export const addEnergy = async (kwh, networkName = "hardhat") => {
   }
 };
 
-// pause function 
+// pause function
 export const pauseContract = async (networkName = "hardhat") => {
   try {
     const contract = await getContract(
@@ -518,7 +526,7 @@ export const pauseContract = async (networkName = "hardhat") => {
     );
     const signer = await contract.runner.provider.getSigner();
     const signerAddress = await signer.getAddress();
-    
+
     const ownerAddress = await getSolarFarm();
     if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
       alert("Only the contract owner (solar farm) can pause the contract");
@@ -531,12 +539,15 @@ export const pauseContract = async (networkName = "hardhat") => {
     return receipt.hash;
   } catch (error) {
     console.error("Error pausing contract:", error);
-    let errorMessage = error.reason || error.message || "Failed to pause contract";
+    let errorMessage =
+      error.reason || error.message || "Failed to pause contract";
     if (error.data) {
       try {
         const iface = new ethers.Interface(CONTRACT_ABI);
         const decodedError = iface.parseError(error.data);
-        errorMessage = `${decodedError.name}: ${JSON.stringify(decodedError.args)}`;
+        errorMessage = `${decodedError.name}: ${JSON.stringify(
+          decodedError.args
+        )}`;
       } catch (decodeError) {
         console.error("Could not decode revert reason:", decodeError);
       }
@@ -556,7 +567,7 @@ export const unpauseContract = async (networkName = "hardhat") => {
     );
     const signer = await contract.runner.provider.getSigner();
     const signerAddress = await signer.getAddress();
-    
+
     const ownerAddress = await getSolarFarm();
     if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
       alert("Only the contract owner (solar farm) can unpause the contract");
@@ -569,12 +580,15 @@ export const unpauseContract = async (networkName = "hardhat") => {
     return receipt.hash;
   } catch (error) {
     console.error("Error unpausing contract:", error);
-    let errorMessage = error.reason || error.message || "Failed to unpause contract";
+    let errorMessage =
+      error.reason || error.message || "Failed to unpause contract";
     if (error.data) {
       try {
         const iface = new ethers.Interface(CONTRACT_ABI);
         const decodedError = iface.parseError(error.data);
-        errorMessage = `${decodedError.name}: ${JSON.stringify(decodedError.args)}`;
+        errorMessage = `${decodedError.name}: ${JSON.stringify(
+          decodedError.args
+        )}`;
       } catch (decodeError) {
         console.error("Could not decode revert reason:", decodeError);
       }
@@ -585,13 +599,61 @@ export const unpauseContract = async (networkName = "hardhat") => {
 };
 
 export const isPaused = async () => {
-  
   const contract = await getContract(
-      "hardhat",
+    "hardhat",
+    CONTRACT_ADDRESS,
+    CONTRACT_ABI,
+    false
+  );
+
+  return await contract.paused();
+};
+
+export const authorizeParty = async (address, networkName = "hardhat") => {
+  try {
+    if (!ethers.isAddress(address)) {
+      alert("Invalid Ethereum address");
+      throw new Error("Invalid Ethereum address");
+    }
+
+    const contract = await getContract(
+      networkName,
       CONTRACT_ADDRESS,
       CONTRACT_ABI,
-      false
+      true
     );
+    //await ensureContractOwner(contract, "authorize parties");
 
-    return await contract.paused();
-}
+    const tx = await contract.authorizeParty(address);
+    const receipt = await tx.wait();
+    alert(`Party authorized successfully! Transaction hash: ${receipt.hash}`);
+    return receipt.hash;
+  } catch (error) {
+    //handleTxError(error, "authorizing party");
+  }
+};
+
+export const unauthorizeParty = async (address, networkName = "hardhat") => {
+  try {
+    if (!ethers.isAddress(address)) {
+      alert("Invalid Ethereum address");
+      throw new Error("Invalid Ethereum address");
+    }
+    console.log(address);
+
+    const contract = await getContract(
+      networkName,
+      CONTRACT_ADDRESS,
+      CONTRACT_ABI,
+      true
+    );
+    //await ensureContractOwner(contract, "unauthorize parties");
+    
+    const tx = await contract.unAuthorizeParty(address);
+    const receipt = await tx.wait();
+    //alert(`Party unauthorized successfully! Transaction hash: ${receipt.hash}`);
+    return receipt.hash;
+  } catch (error) {
+    //handleTxError(error, "unauthorizing party");
+  }
+};

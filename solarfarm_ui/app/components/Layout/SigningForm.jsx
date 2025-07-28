@@ -1,209 +1,3 @@
-// "use client";
-
-// import { useState } from "react";
-// import User from "../../../models/user";
-// import UnderlineButton from "../UI/UnderlineButton";
-// import PrimaryButton from "../UI/PrimaryButton";
-// import { ethers } from "ethers";
-// import Modal from "./Model";
-
-// export default function SigningForm({
-//   mode = "signIn", // "signIn" or "signUp"
-//   onSubmit,
-// }) {
-//   const [isWalletConnected, setIsWalletConnected] = useState(false);
-//   const [isConnecting, setIsConnecting] = useState(false);
-//   const [errorModalOpen, setErrorModalOpen] = useState(false);
-//   const [errorMessage, setErrorMessage] = useState(null);
-
-//   const [formData, setFormData] = useState({
-//     email: "",
-//     password: "",
-//     confirmPassword: "",
-//     username: "",
-//     birthday: "",
-//     ethereumAddress: "",
-//   });
-//   const [isLoading, setIsLoading] = useState(false);
-
-//   const handleChange = (e) => {
-//     const { name, value } = e.target;
-//     setFormData((prev) => ({ ...prev, [name]: value }));
-//   };
-
-//   const handleSubmit = (e) => {
-//     e.preventDefault();
-//     try {
-//       setIsLoading(true);
-//       if (mode === "signUp") {
-//         if (!isWalletConnected) {
-//           setErrorMessage("Please connect your wallet to sign up.");
-//           setErrorModalOpen(true);
-//           return;
-//         }
-//         if (formData.password !== formData.confirmPassword) {
-//           alert("Passwords do not match!");
-//           return;
-//         }
-//         console.log("Form data submitted1:", formData.password);
-//         const user = new User({
-//           email: formData.email,
-//           username: formData.username,
-//           password: formData.password,
-//           birthday: formData.birthday,
-//           ethereumAddress: formData.ethereumAddress,
-//           energy: 0
-//         });
-//         onSubmit(user);
-//       } else {
-//         onSubmit({ email: formData.email, password: formData.password });
-//       }
-//       //Reset form after submission
-//       setFormData({
-//         email: "",
-//         password: "",
-//         confirmPassword: "",
-//         username: "",
-//         birthday: "",
-//         ethereumAddress: "",
-//       });
-//       setIsWalletConnected(false);
-//       alert("Form submitted successfully!");
-//     } catch (error) {
-//       console.error("Error during form submission:", error);
-//       alert(`Failed to submit form: ${error.message}`);
-//     } finally {
-//       setIsLoading(false);
-//     }
-//   };
-
-//   const handleConnectWallet = async () => {
-//     if (!window.ethereum) {
-//       setErrorMessage(
-//         "MetaMask is not installed. Please install it to continue."
-//       );
-//       setErrorModalOpen(true);
-//       return;
-//     }
-//     setIsConnecting(true);
-//     try {
-//       // Request account access from MetaMask
-//       const provider = new ethers.BrowserProvider(window.ethereum);
-//       const accounts = await provider.send("eth_requestAccounts", []);
-//       const address = accounts[0];
-//       setFormData((prev) => ({ ...prev, ethereumAddress: address }));
-//       setIsWalletConnected(true);
-//     } catch (error) {
-//       console.error("Error connecting to MetaMask:", error);
-//       setErrorMessage(error.message || "Failed to connect to MetaMask");
-//       setErrorModalOpen(true);
-//     } finally {
-//       setIsConnecting(false);
-//     }
-//   };
-
-//   const isSubmitDisabled =
-//     !formData.email ||
-//     !formData.password ||
-//     (mode === "signUp" &&
-//       (!formData.username ||
-//         !formData.birthday ||
-//         formData.password !== formData.confirmPassword));
-
-//   return (
-//     <form
-//       className="py-4 px-7 bg-primary/5 rounded-md block min-w-fit w-full"
-//       onSubmit={handleSubmit}
-//     >
-//       <label className="block">
-//         Email
-//         <input
-//           type="email"
-//           name="email"
-//           value={formData.email}
-//           onChange={handleChange}
-//           required
-//           className="block mt-2 my-4 px-2 py-1 rounded-sm w-full"
-//         />
-//       </label>
-//       <label className="block">
-//         Password
-//         <input
-//           type="password"
-//           name="password"
-//           value={formData.password}
-//           onChange={handleChange}
-//           required
-//           className="block mt-2 my-4 px-2 py-1 rounded-sm w-full"
-//         />
-//       </label>
-//       {mode === "signUp" && (
-//         <>
-//           <label className="block">
-//             Confirm Password
-//             <input
-//               type="password"
-//               name="confirmPassword"
-//               value={formData.confirmPassword}
-//               onChange={handleChange}
-//               required
-//               className="block mt-2 my-4 px-2 py-1 rounded-sm w-full"
-//             />
-//           </label>
-//           <label className="block">
-//             Username
-//             <input
-//               type="text"
-//               name="username"
-//               value={formData.username}
-//               onChange={handleChange}
-//               required
-//               className="block mt-2 my-4 px-2 py-1 rounded-sm w-full"
-//             />
-//           </label>
-//           <label className="block">
-//             Birthday
-//             <input
-//               type="date"
-//               name="birthday"
-//               value={formData.birthday}
-//               onChange={handleChange}
-//               required
-//               className="block mt-2 my-4 px-2 py-1 rounded-sm w-full"
-//             />
-//           </label>
-//           {isWalletConnected ? (
-//             <div className="text-center text-gray-600 my-4">
-//               Connected Wallet: {formData.ethereumAddress.slice(0, 6)}...
-//               {formData.ethereumAddress.slice(-4)}
-//             </div>
-//           ) : (
-//             <div className="flex justify-center items-center my-4">
-//               <PrimaryButton
-//                 title={isConnecting ? "Connecting..." : "Connect Wallet"}
-//                 onClick={handleConnectWallet}
-//                 disabled={isConnecting}
-//               />
-//             </div>
-//           )}
-//         </>
-//       )}
-//       <UnderlineButton
-//         title={mode === "signIn" ? "Sign In" : "Sign Up"}
-//         type="submit"
-//         disabled={isLoading}
-//       />
-//       <Modal
-//         isOpen={errorModalOpen}
-//         onClose={() => setErrorModalOpen(false)}
-//         onConfirm={() => setErrorModalOpen(false)}
-//       >
-//         <h2 className="text-xl font-semibold text-gray-800 mb-4">Error</h2>
-//         <p className="text-red-600">{errorMessage}</p>
-//       </Modal>
-//     </form>
-//   );
-// }
 "use client";
 
 import { useState, useEffect } from "react";
@@ -255,6 +49,37 @@ export default function SigningForm({
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const changeWalletHandler = async () => {
+    if (!window.ethereum) {
+      setErrorMessage(
+        "MetaMask is not installed. Please install it to continue."
+      );
+      return;
+    }
+    setIsConnecting(true);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      const address = accounts[0];
+      const updatedUser = new User({
+        uid: user.uid,
+        email: user.email,
+        username: user.username,
+        birthday: user.birthday,
+        password: user._password,
+        ethereumAddress: address,
+        energy: user.energy,
+      });
+      //console.log("Updated user:", updatedUser);
+      alert("Wallet changed successfully");
+    } catch (error) {
+      console.error("Error connecting to MetaMask:", error);
+      setErrorMessage(error.message || "Failed to connect to MetaMask");
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const handleSubmit = (e) => {
@@ -452,6 +277,9 @@ export default function SigningForm({
             <div className="text-center text-primary-600 my-4">
               Connected Wallet:{" "}
               {truncateEthereumAddress(formData.ethereumAddress)}
+              <div className="pt-4">
+                <PrimaryButton title="Change Wallet" onClick={changeWalletHandler} />
+              </div>
             </div>
           ) : (
             <div className="flex justify-center items-center my-4">

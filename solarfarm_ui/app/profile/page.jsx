@@ -2,18 +2,20 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../store/index";
-import { getEthBalance } from "@/utils/contract";
+import { checkIfAuthorized, getEthBalance } from "@/utils/contract";
 import { useRouter } from "next/navigation";
 import PrimaryButton from "../components/UI/PrimaryButton";
 import { ethers } from "ethers";
-import User from "@/models/user";
 import Card from "../components/Layout/Card";
 import { truncateEthereumAddress } from "@/utils/tools";
 import UnderlineButton from "../components/UI/UnderlineButton";
+import { saveData } from "@/utils/databaseUtils";
+import User from "@/models/user";
 
 export default function ProfilePage() {
   const router = useRouter();
   const { user } = useAuth();
+  const [currUser, setCurrUser] = useState(null);
   const [balance, setBalance] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -23,6 +25,8 @@ export default function ProfilePage() {
     if (!user) {
       router.push("/login");
     }
+    console.log(user);
+    setCurrUser(user);
   }, [user, router]);
 
   useEffect(() => {
@@ -59,15 +63,17 @@ export default function ProfilePage() {
       const accounts = await provider.send("eth_requestAccounts", []);
       const address = accounts[0];
       const updatedUser = new User({
-        uid: user.uid,
         email: user.email,
         username: user.username,
         birthday: user.birthday,
-        password: user._password,
-        ethereumAddress: address,
+        uid: user.uid,
         energy: user.energy,
+        password: user.password,
+        ethereumAddress: address 
       });
       //console.log("Updated user:", updatedUser);
+      await saveData(updatedUser.toJSON(), `/users/${user._uid}`);
+      
       alert("Wallet changed successfully");
     } catch (error) {
       console.error("Error connecting to MetaMask:", error);
@@ -96,16 +102,16 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 gap-4">
           <p>
             <span className="font-medium text-primary-600">Username:</span>{" "}
-            <span className="text-secondary-900">{user.username || "N/A"}</span>
+            <span className="text-secondary-900">{currUser.username || "N/A"}</span>
           </p>
           <p>
             <span className="font-medium text-primary-600">Email:</span>{" "}
-            <span className="text-secondary-900">{user.email || "N/A"}</span>
+            <span className="text-secondary-900">{currUser.email || "N/A"}</span>
           </p>
           <p>
             <span className="font-medium text-primary-600">Birthday:</span>{" "}
             <span className="text-secondary-900">
-              {user.birthday ? user.birthday.toLocaleDateString() : "N/A"}
+              {currUser.birthday ? currUser.birthday.toLocaleDateString() : "N/A"}
             </span>
           </p>
           <p>
@@ -114,8 +120,8 @@ export default function ProfilePage() {
             </span>{" "}
             <span className="font-mono break-all">
               <span className="text-secondary-900">
-                {user._ethereumAddress
-                  ? truncateEthereumAddress(user._ethereumAddress)
+                {currUser._ethereumAddress
+                  ? truncateEthereumAddress(currUser._ethereumAddress)
                   : "Not connected"}
               </span>
             </span>
@@ -132,6 +138,12 @@ export default function ProfilePage() {
             <span className="font-medium text-primary-600">Energy:</span>{" "}
             <span className="text-secondary-900">
               {user.energy ? `${user.energy} kWh` : "0 kWh"}
+            </span>
+          </p>
+          <p>
+            <span className="font-medium text-primary-600">Authorized:</span>{" "}
+            <span className="text-secondary-900">
+              {checkIfAuthorized(currUser) ? `Yes` : "No"}
             </span>
           </p>
           <div className="text-center flex flex-row justify-self-center items-center pt-4">
