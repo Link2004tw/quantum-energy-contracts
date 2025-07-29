@@ -20,7 +20,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     uint256 public constant ADD_ENERGY_DELAY = 2 minutes; // Delay for adding energy
     uint256 public constant COMMIT_REVEAL_WINDOW = 5 minutes; // Commitment reveal window
     //uint256 public constant COMMIT_COOLDOWN = 5 minutes; // Cooldown between commitments
-    uint256 public constant COMMIT_COOLDOWN = 5 minutes; // Cooldown between commitments
+    uint256 public constant COMMIT_COOLDOWN = 0.5 minutes; // Cooldown between commitments
 
     uint256 public constant MAX_AUTHORIZED_PARTIES = 100; // Max authorized parties
     uint256 public constant MAX_GAS_FOR_CALL = 5_000_000; // Gas limit for external calls
@@ -320,7 +320,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
 
         PurchaseCommitment memory commitment = purchaseCommitments[msg.sender];
         if (commitment.timestamp == 0) {
-            //console.log("1");
+            console.log("1");
             revert CommitmentExpired(0, block.timestamp);
         }
         if (block.timestamp > commitment.timestamp + COMMIT_REVEAL_WINDOW)
@@ -329,7 +329,10 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         if (
             keccak256(abi.encodePacked(_kWh, _nonce, msg.sender)) !=
             commitment.commitmentHash
-        ) revert InvalidCommitment();
+        ) {
+            console.log("2");
+            revert InvalidCommitment();
+        }
 
         uint256 ethPriceUSD = getLatestEthPrice(); // Updates cache if Chainlink valid, falls back to cache if down
         uint256 totalCostUSDCents = _kWh * PRICE_PER_KWH_USD_CENTS;
@@ -338,8 +341,10 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
             _kWh,
             cachedEthPrice / 10 ** 10
         );
-        if (totalCostWei == 0 || msg.value < totalCostWei)
+        if (totalCostWei == 0 || msg.value < totalCostWei) {
+            console.log("3");
             revert PaymentAmountTooSmall(msg.value, totalCostWei);
+        }
 
         availableKWh -= _kWh;
 
@@ -361,10 +366,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
             gas: MAX_GAS_FOR_CALL
         }("");
         if (!sent) {
-            // console.log(
-            //     "EnergyContract: PaymentFailed sending to:",
-            //     paymentReceiver
-            // );
+            console.log("4");
             revert PaymentFailed();
         }
         emit EnergyPurchased(

@@ -9,7 +9,9 @@ import {
   checkIfAuthorized,
   revealPurchase,
   getNonceFromUid,
-  getMockPrice
+  estimateGasForRevealPurchase,
+  estimateGasForCommitPurchase,
+  convertEthToUsd,
 } from "../../utils/contract";
 import { useAuth } from "../store";
 import { useRouter } from "next/navigation";
@@ -58,70 +60,101 @@ export default function BuySolarPage() {
     setSuccessDetails(null);
   };
 
-  
-  
   const handleConfirmPurchase = async () => {
-  if (!pendingPurchase) return;
+    if (!pendingPurchase) return;
 
-  const { parsedAmount, priceEth, commitTimestamp, commitTxHash } = pendingPurchase;
-  setError(null);
-  setModalOpen(false);
-
-  try {
-    // Check if commitment has expired (5 minutes = 300,000 ms)
-    const currentTime = Date.now();
-    const COMMIT_REVEAL_WINDOW_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
-    if (currentTime > commitTimestamp + COMMIT_REVEAL_WINDOW_MS) {
-      throw new Error("Purchase commitment has expired (5-minute window exceeded)");
-    }
-
-    // Use nonce from getNonceFromUid
-    const nonce = getNonceFromUid(user._uid);
-
-    // Call revealPurchase
-    const txHash = await revealPurchase("hardhat", parsedAmount, {
-      _uid: user._uid,
-      _ethereumAddress: user._ethereumAddress,
-    });
-    // console.log(txHash);
-    user.energy += parsedAmount;
-    const order = new CommittedOrders({
-      energyRequested: parsedAmount,
-      transactionHash: txHash,
-      uid: user._uid,
-      ethereumAddress: user._ethereumAddress,
-      nonce: nonce,
-      createdAt: new Date().toISOString(),
-    });
-    
-    // Save to Firebase using saveData
-    await saveData(order.toFirebase(), `committedOrders/${user._uid}/${txHash}`);
-    await saveData(user.toJSON(),`users/${user._uid}`);
-    // Show success modal
-    setSuccessDetails({
+    const {
       parsedAmount,
       priceEth,
-      txHash,
-    });
-    setSuccessModalOpen(true);
-    
-    setAmount("");
-    setPendingPurchase(null);
+      commitTimestamp,
+      commitTxHash,
+      commitGasCost,
+    } = pendingPurchase;
+    setError(null);
+    setModalOpen(false);
 
-    // Update available energy
     try {
-      const energy = await getAvailableEnergy("hardhat");
-      setAvailableEnergy(energy);
-    } catch (error) {
-      console.error("Error fetching available energy:", error.message);
+      // Check if commitment has expired (5 minutes = 300,000 ms)
+      const currentTime = Date.now();
+      const COMMIT_REVEAL_WINDOW_MS = 5 * 60 * 1000; // 5 minutes in milliseconds
+      if (currentTime > commitTimestamp + COMMIT_REVEAL_WINDOW_MS) {
+        throw new Error(
+          "Purchase commitment has expired (5-minute window exceeded)"
+        );
+      }
+
+      // Use nonce from getNonceFromUid
+      const nonce = getNonceFromUid(user._uid);
+
+      const gasCostForReveal = await estimateGasForRevealPurchase(
+        "hardhat",
+        parsedAmount,
+        user
+      );
+      const { gasCostInEth, energyCostInEth, totalCostInEth, gasEstimate } =
+        gasCostForReveal;
+      const { ethAmount, usdAmount } = await convertEthToUsd(
+        totalCostInEth,
+        "hardhat"
+      );
+      console.log(ethAmount, usdAmount);
+
+      const confirmation = window.confirm(
+        `Energy Cost: ${energyCostInEth} ETH\n` +
+          `Estimated Gas Cost: ${gasCostInEth} ETH\n` +
+          `Total Estimated Cost: ${totalCostInEth} ETH\n` +
+          `Proceed with transaction? (As of 12:37 AM EEST, July 29, 2025)`
+      );
+      console.log(confirmation);
+      // Call revealPurchase
+      const txHash = await revealPurchase("hardhat", parsedAmount, {
+        _uid: user._uid,
+        _ethereumAddress: user._ethereumAddress,
+      });
+      // console.log(txHash);
+      user.energy += parsedAmount;
+      const order = new CommittedOrders({
+        energyRequested: parsedAmount,
+        transactionHash: txHash,
+        uid: user._uid,
+        ethereumAddress: user._ethereumAddress,
+        nonce: nonce,
+        createdAt: new Date().toISOString(),
+      });
+
+      // Save to Firebase using saveData
+      await saveData(
+        order.toFirebase(),
+        `committedOrders/${user._uid}/${txHash}`
+      );
+      await saveData(user.toJSON(), `users/${user._uid}`);
+      // Show success modal
+      setSuccessDetails({
+        parsedAmount,
+        priceEth,
+        txHash,
+        costUsd: usdAmount / 1e10,
+        costEth: ethAmount,
+      });
+      setSuccessModalOpen(true);
+
+      setAmount("");
+      setPendingPurchase(null);
+
+      // Update available energy
+      try {
+        const energy = await getAvailableEnergy("hardhat");
+        setAvailableEnergy(energy);
+      } catch (error) {
+        console.error("Error fetching available energy:", error.message);
+      }
+    } catch (err) {
+      console.error("Error revealing purchase:", err);
+      setError(err.message);
+      setSuccessModalOpen(true);
+      setSuccessDetails({ error: err.message });
     }
-  } catch (err) {
-    console.error("Error revealing purchase:", err);
-    setError(err.message);
-    setSuccessModalOpen(true);
-    setSuccessDetails({ error: err.message });
-  }
-};
+  };
   const commitPurchaseHandler = async (e) => {
     e.preventDefault();
     setError(null);
@@ -131,7 +164,9 @@ export default function BuySolarPage() {
       const isAuthorized = await checkIfAuthorized(user);
       console.log(isAuthorized);
       if (!isAuthorized) {
-        alert("You are not Authorized please wait till the admin authorizes your wallet");
+        alert(
+          "You are not Authorized please wait till the admin authorizes your wallet"
+        );
         return;
         //throw new Error("You are not authorized to make purchases. Please contact support.");
       }
@@ -142,12 +177,27 @@ export default function BuySolarPage() {
       }
 
       // Calculate price
-      await getMockPrice();
+      //await getMockPrice();
       //const priceEth = BigInt(1000);
       const priceEth = await getCost(parsedAmount, "hardhat");
+      const gasCostForCommitment = await estimateGasForCommitPurchase(
+        "hardhat",
+        parsedAmount,
+        user
+      );
+      const { gasCostInEth, energyCostInEth, totalCostInEth, gasEstimate } =
+        gasCostForCommitment;
 
+      console.log(totalCostInEth);
+      const gasCostForCommitmentUsd = await convertEthToUsd(
+        totalCostInEth,
+        "hardhat"
+      );
+      const usdCost = gasCostForCommitmentUsd.usdAmount;
+      const ethCost = gasCostForCommitmentUsd.ethAmount;
+      console.log(gasCostForCommitmentUsd);
       // Commit purchase
-      const commitTxHash = await commitPurchase("hardhat", parsedAmount, {
+      const hash = await commitPurchase("hardhat", parsedAmount, {
         _uid: user._uid,
         _ethereumAddress: user._ethereumAddress,
       });
@@ -157,7 +207,9 @@ export default function BuySolarPage() {
         parsedAmount,
         priceEth,
         commitTimestamp: Date.now(),
-        commitTxHash,
+        commitTxHash: hash,
+        commitGasCostUsd: usdCost / 1e10,
+        commitGasCostEth: ethCost,
       });
       setModalOpen(true);
     } catch (err) {
@@ -213,33 +265,46 @@ export default function BuySolarPage() {
         </h2>
         <p className="text-gray-600">
           Purchase {pendingPurchase?.parsedAmount} kWh for{" "}
-          {pendingPurchase?.priceEth} ETH? = {pendingPurchase?.parsedAmount * 0.12}$?
+          {Number(pendingPurchase?.priceEth) +
+            Number(pendingPurchase?.commitGasCostEth)}{" "}
+          ETH? = {pendingPurchase?.parsedAmount * 0.12}$? +{" "}
+          {pendingPurchase?.commitGasCostUsd}$ gas cost ={" "}
+          {pendingPurchase?.parsedAmount * 0.12 +
+            pendingPurchase?.commitGasCostUsd}
         </p>
+        <br />
+        <p>revealing fees may apply</p>
       </Modal>
-        <Modal
-          isOpen={successModalOpen}
-          onClose={handleCloseSuccessModal}
-          onConfirm={handleCloseSuccessModal}
-          isCancel={false}
-          isConfirm={true}
-        >
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            {successDetails?.error
-              ? "Transaction Failed"
-              : "Transaction Successful"}
-          </h2>
-          {successDetails?.error ? (
-            <p className="text-red-600">Error: {successDetails.error}</p>
-          ) : (
-            <div className="text-gray-600">
-              <p>
-                You have successfully purchased {successDetails?.parsedAmount}{" "}
-                kWh for {successDetails?.priceEth} ETH = {successDetails?.parsedAmount * 0.12}$.
-              </p>
-            </div>
-          )}
-        </Modal>
-    
+      <Modal
+        isOpen={successModalOpen}
+        onClose={handleCloseSuccessModal}
+        onConfirm={handleCloseSuccessModal}
+        isCancel={false}
+        isConfirm={true}
+      >
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          {successDetails?.error
+            ? "Transaction Failed"
+            : "Transaction Successful"}
+        </h2>
+        {successDetails?.error ? (
+          <p className="text-red-600">Error: {successDetails.error}</p>
+        ) : (
+          <div className="text-gray-600">
+            <p>
+              You have successfully purchased {successDetails?.parsedAmount} kWh
+              for {successDetails?.priceEth} + {successDetails?.costEth} ={" "}
+              {Number(successDetails?.parsedAmount) +
+                Number(successDetails?.costEth)}{" "}
+              ETH = {successDetails?.parsedAmount * 0.12}$. (energy cost) +{" "}
+              {successDetails?.costUsd} ={" "}
+              {Number(successDetails?.parsedAmount * 0.12) +
+                Number(successDetails?.costUsd)}
+              $
+            </p>
+          </div>
+        )}
+      </Modal>
     </main>
   );
 }
