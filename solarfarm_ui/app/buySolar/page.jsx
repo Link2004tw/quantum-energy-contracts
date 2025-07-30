@@ -12,6 +12,7 @@ import {
   estimateGasForRevealPurchase,
   estimateGasForCommitPurchase,
   convertEthToUsd,
+  getLatestEthPriceWC,
 } from "../../utils/contract";
 import { useAuth } from "../store";
 import { useRouter } from "next/navigation";
@@ -29,6 +30,7 @@ export default function BuySolarPage() {
   const [pendingPurchase, setPendingPurchase] = useState(null);
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successDetails, setSuccessDetails] = useState(null);
+  const [ethUsdPrice, setEthUsdPrice] = useState(null);
 
   const { user } = useAuth();
 
@@ -37,6 +39,8 @@ export default function BuySolarPage() {
       try {
         const energy = await getAvailableEnergy("hardhat");
         setAvailableEnergy(energy);
+        const ethprice = await getLatestEthPriceWC("hardhat");
+        setEthUsdPrice(ethprice);
       } catch (err) {
         setError(err.message);
       }
@@ -168,13 +172,12 @@ export default function BuySolarPage() {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const accounts = await provider.send("eth_requestAccounts", []);
       const address = accounts[0];
-      if(address != user.ethereumAddress){
+      if (address != user.ethereumAddress) {
         alert("Please use your registered wallet!");
-        return
+        return;
       }
     } catch (error) {
       console.error("Error connecting to MetaMask:", error);
-      
     }
     try {
       // Check authorization
@@ -193,9 +196,6 @@ export default function BuySolarPage() {
         throw new Error("Amount must be a number between 1 and 1000 kWh");
       }
 
-      // Calculate price
-      //await getMockPrice();
-      //const priceEth = BigInt(1000);
       const priceEth = await getCost(parsedAmount, "hardhat");
       const gasCostForCommitment = await estimateGasForCommitPurchase(
         "hardhat",
@@ -249,6 +249,8 @@ export default function BuySolarPage() {
             {availableEnergy !== null
               ? `(${availableEnergy} kWh available)`
               : ""}
+              <br/>
+              {ethUsdPrice} USD/Eth
             <input
               type="number"
               name="amount"

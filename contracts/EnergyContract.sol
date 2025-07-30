@@ -451,6 +451,51 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         return priceLastUpdated;
     }
 
+    function getLatestEthPriceWithoutCaching() public view returns (uint256) {
+        // Try Chainlink first
+        (
+            uint80 roundId,
+            int256 price,
+            ,
+            uint256 updatedAt,
+            uint80 answeredInRound
+        ) = priceFeed.latestRoundData();
+
+        // Check if Chainlink data is valid
+        bool isChainlinkValid = true;
+        //console.logInt(price);
+        if (price <= 0) {
+            isChainlinkValid = false; // Invalid price
+        } else if (updatedAt <= block.timestamp - STALENESS_THRESHOLD) {
+            isChainlinkValid = false; // Stale data
+        } else if (answeredInRound < roundId) {
+            isChainlinkValid = false; // Incomplete round
+        } else if (price < 100 * 10 ** 8 || price > 10000 * 10 ** 8) {
+            isChainlinkValid = false; // Out-of-bounds price
+            revert InvalidPriceBounds();
+        }
+
+        if (isChainlinkValid) {
+            // Valid Chainlink data: update cache and return price
+            uint256 adjustedPrice = uint256(price) * 10 ** 10;
+            return adjustedPrice;
+        } else {
+            if (cachedEthPrice != 0) {
+                //console.log("1");
+                if (block.timestamp > priceLastUpdated + STALENESS_THRESHOLD) {
+                    revert PriceFeedStale(
+                        priceLastUpdated,
+                        STALENESS_THRESHOLD
+                    );
+                } else {
+                    return cachedEthPrice; // Return cached value if Chainlink is down
+                }
+            } else {
+                revert InvalidEthPrice();
+            }
+        }
+    }
+
     function getLatestEthPrice() public returns (uint256) {
         // Try Chainlink first
         (

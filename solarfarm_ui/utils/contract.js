@@ -94,16 +94,6 @@ const getContract = async (
   }
 };
 
-const getGasCost = (encodedFuncton) => {
-  const provider = new ethers.BrowserProvider(window.ethereum);
-
-  const gas = provider.estimateGas({
-    to: CONTRACT_ADDRESS,
-    data: encodedFuncton,
-  });
-  return gas.toNumber();
-};
-
 // Check if contract connection is successful
 export const checkContractConnection = async (networkName = "hardhat") => {
   try {
@@ -170,6 +160,21 @@ export const getSolarFarm = async (networkName = "hardhat") => {
   }
 };
 
+export const getLatestEthPriceWC = async(networkName ="hardhat") => {
+  try {
+    // Use signer to call getLatestEthPrice as it updates the cache
+    const contract = await getContract(
+      networkName,
+      CONTRACT_ADDRESS,
+      CONTRACT_ABI,
+      false
+    );
+    const price = await contract.getLatestEthPriceWithoutCaching();
+    return Number(price) / 1e18;
+  }catch(error){
+    console.log(error);
+  }
+}
 // Call getLatestEthPrice()
 export const getLatestEthPrice = async (networkName = "hardhat") => {
   try {
@@ -644,7 +649,7 @@ export const getMockPrice = async () => {
     false
   );
 
-  return await mockPriceContract.latestRoundData();
+  return (await mockPriceContract.latestRoundData()).answer;
 };
 
 export const updateAnswer = async (price, networkName = "hardhat") => {
