@@ -20,7 +20,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     uint256 public constant ADD_ENERGY_DELAY = 2 minutes; // Delay for adding energy
     uint256 public constant COMMIT_REVEAL_WINDOW = 5 minutes; // Commitment reveal window
     //uint256 public constant COMMIT_COOLDOWN = 5 minutes; // Cooldown between commitments
-    uint256 public constant COMMIT_COOLDOWN = 0.5 minutes; // Cooldown between commitments
+    uint256 public constant COMMIT_COOLDOWN = 5 minutes; // Cooldown between commitments
 
     uint256 public constant MAX_AUTHORIZED_PARTIES = 100; // Max authorized parties
     uint256 public constant MAX_GAS_FOR_CALL = 5_000_000; // Gas limit for external calls
@@ -470,6 +470,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         } else if (answeredInRound < roundId) {
             isChainlinkValid = false; // Incomplete round
         } else if (price < 100 * 10 ** 8 || price > 10000 * 10 ** 8) {
+            console.log("1");
             isChainlinkValid = false; // Out-of-bounds price
             revert InvalidPriceBounds();
         }

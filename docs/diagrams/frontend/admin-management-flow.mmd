@@ -1,0 +1,20 @@
+sequenceDiagram
+    participant A as Admin
+    participant F as Frontend (/admin)
+    participant C as EnergyContract
+    participant FB as Firebase
+
+    A->>F: Logs in as Admin
+    A->>F: Views User Requests
+    F->>FB: Fetches pending requests (user.js)
+    FB-->>F: Returns requests
+    F-->>A: Displays requests
+    A->>F: Approves User Join
+    F->>C: Calls authorizeParty(userAddress)
+    C-->>F: User authorized
+    F->>FB: Updates user status
+    A->>F: Unauthorizes User
+    F->>C: Calls unauthorizeParty(userAddress)
+    C-->>F: User unauthorized
+    F->>FB: Updates user status
+    F-->>A: Success message

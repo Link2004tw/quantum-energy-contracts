@@ -18,6 +18,7 @@ import { useRouter } from "next/navigation";
 import Modal from "../components/Layout/Model";
 import CommittedOrders from "@/models/commitedOrders";
 import { saveData } from "@/utils/databaseUtils";
+import { ethers } from "ethers";
 
 export default function BuySolarPage() {
   const router = useRouter();
@@ -155,10 +156,26 @@ export default function BuySolarPage() {
       setSuccessDetails({ error: err.message });
     }
   };
+
   const commitPurchaseHandler = async (e) => {
     e.preventDefault();
     setError(null);
-
+    if (!window.ethereum) {
+      alert("Metamask is not installed please install it ");
+      return;
+    }
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      const address = accounts[0];
+      if(address != user.ethereumAddress){
+        alert("Please use your registered wallet!");
+        return
+      }
+    } catch (error) {
+      console.error("Error connecting to MetaMask:", error);
+      
+    }
     try {
       // Check authorization
       const isAuthorized = await checkIfAuthorized(user);

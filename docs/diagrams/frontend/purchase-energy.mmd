@@ -1,17 +1,26 @@
 sequenceDiagram
-    actor U as User
-    participant F as Next.js Frontend
-    participant DB as Firebase
-    participant BC as Ethereum Blockchain
+    participant U as User
+    participant F as Frontend (/buySolar)
+    participant C as EnergyContract
+    participant FB as Firebase
 
-    U->>F: Navigate to /buySolar (app/buySolar/page.jsx)
-    F-->>U: Render Buy Solar page with PrimaryButton (components/UI/PrimaryButton.jsx)
-    U->>F: Submit order (energyRequested, payment)
-    F->>F: Create CommittedOrders instance (models/commitedOrders.js)
-    F->>BC: Call commitPurchase on EnergyContract (utils/contract.js, SolarFarmABI.json)
-    BC-->>F: Return transaction hash
-    F->>DB: Save CommittedOrders to Realtime Database (config/firebase.js)
-    DB-->>F: Confirm save
-    F-->>U: Redirect to /orders (app/orders/page.jsx) with OrdersList (OrdersList.jsx, OrderItem.jsx)
-
-    Note right of F: Reveal phase of commit-reveal process occurs later (EnergyContract.sol)
+    U->>F: Attempts Purchase
+    F->>C: Checks authorizeParty(userAddress)
+    alt Unauthorized
+        C-->>F: Revert (Unauthorized)
+        F-->>U: Access Denied
+    else Authorized
+        U->>F: Clicks 'Estimate Costs'
+        F->>C: Calls estimateGasForRevealPurchase(amount, nonce)
+        C-->>F: Returns gasEstimate, gasCostInEth, totalCostInEth
+        F-->>U: Displays gas and total cost
+        U->>F: Clicks 'Commit Purchase'
+        F->>C: Calls commitPurchase(hash)
+        C-->>F: Transaction hash
+        F->>FB: Stores committed order (commitedOrders.js)
+        U->>F: Clicks 'Reveal Purchase' (within COMMIT_REVEAL_WINDOW)
+        F->>C: Calls revealPurchase(amount, nonce, {value})
+        C-->>F: Transaction confirmation
+        F->>FB: Updates transaction (transaction.js)
+        F-->>U: Success message
+    end

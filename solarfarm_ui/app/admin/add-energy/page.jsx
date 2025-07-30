@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useAuth } from "@/app/store";
 import PrimaryButton from "@/app/components/UI/PrimaryButton"; //from '@/components/UI/PrimaryButton';
-import { addEnergy } from "@/utils/contract";
+import { addEnergy, getAvailableEnergy } from "@/utils/contract";
 import Card from "@/app/components/Layout/Card";
 import ProgressBar from "./ProgressBar";
 import { saveData } from "@/utils/databaseUtils";
@@ -13,6 +13,14 @@ export default function AddEnergyPage() {
   const { user, isLoggedIn } = useAuth();
   const [kwh, setKwh] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableEnergy, setAvailableEnergy] = useState(0);
+
+  const fetchEnergy = async () => {
+    setAvailableEnergy(await getAvailableEnergy());
+  };
+  useEffect(() => {
+    fetchEnergy();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -33,7 +41,10 @@ export default function AddEnergyPage() {
         conHash: confirmTxHash,
       });
 
-      await saveData(transaction, `/energyTransactions/${transaction.transactionId}`);
+      await saveData(
+        transaction,
+        `/energyTransactions/${transaction.transactionId}`
+      );
 
       setKwh("");
       alert("Energy transaction saved successfully!");
@@ -41,6 +52,7 @@ export default function AddEnergyPage() {
       console.error("Error adding energy:", error);
       alert("Failed to add energy transaction.");
     } finally {
+      await fetchEnergy();
       setIsSubmitting(false);
     }
   };
@@ -58,6 +70,9 @@ export default function AddEnergyPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card title="add energy">
         <form onSubmit={handleSubmit}>
+          <p className="text-primary-700">
+            Available Energy: {availableEnergy}{" "}
+          </p>
           <input
             type="number"
             id="kwh"
