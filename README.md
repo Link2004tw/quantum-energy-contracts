@@ -10,7 +10,7 @@
 - **Security**: Uses OpenZeppelin’s Ownable, Pausable, and ReentrancyGuard to protect against unauthorized access and reentrancy attacks.
 - **Refund Mechanism**: Supports overpayment refunds via `withdrawRefunds` with `nonReentrant`.
 - **Gas Estimation**: Offers real-time gas cost estimates for commit and reveal purchases via the `/buySolar` UI, using `utils/contract.js`.
-- **Visual Documentation**: Includes Mermaid diagrams in `docs/diagrams/` and screenshots in `./screenshots/buisnessDemo` for contract and frontend flows.
+- **Visual Documentation**: Includes Mermaid diagrams in `docs/diagrams/` and screenshots in `./screenshots/buisnessDemo`, `./screenshots/technicalDemo`, and `./screenshots/adminDemo` for contract and frontend flows.
 
 ## Goals
 
@@ -56,13 +56,59 @@ The business mode user flow guides users through the process of logging in, acce
     ![Orders Page](./screenshots/buisnessDemo/ordersPage.png)
     
 
+## Technical Mode Web3 Integration
+
+The technical mode user flow demonstrates the Web3 integration process, from connecting a MetaMask wallet to interacting with the `EnergyContract` smart contract for commit and reveal purchases. Below is the sequence with embedded screenshots from `./screenshots/technicalDemo`:
+
+1. **MetaMask Connection**  
+    Users connect their MetaMask wallet to the Hardhat testnet to enable blockchain interactions.  
+    ![MetaMask Connect](./screenshots/technicalDemo/metamask.png)
+    
+2. **Commit Purchase**  
+    Users initiate a commit purchase on the `/buySolar` page, entering kWh, viewing gas estimates, and triggering the `commitPurchase` function via MetaMask.  
+    ![Commit Purchase](./screenshots/technicalDemo/commit.png)
+    
+3. **Reveal Purchase**  
+    Users confirm the reveal step in MetaMask within the commit-reveal window, finalizing the purchase with gas cost details.  
+    ![Reveal Purchase](./screenshots/technicalDemo/reveal.png)
+    
+
+## Admin Dashboard Energy Management Interface
+
+The admin dashboard energy management interface allows authorized admin users (e.g., `alice.smith@example.com` from `dummyUsers`) to manage energy trading operations, including adding energy, updating prices, managing users, and handling requests. Below is the sequence with embedded screenshots from `./screenshots/adminDemo`:
+
+1. **Admin Dashboard**  
+    The main admin dashboard provides an overview and navigation to energy management tasks.  
+    ![Admin Dashboard](./screenshots/adminInterface/adminDashboard.png)
+    
+2. **Add Energy Page**  
+    Admins add energy to the contract using `requestAddEnergy` and `confirmAddEnergy`, specifying kWh amounts.  
+    ![Add Energy Page](./screenshots/adminInterface/addEnergyPage.png)
+    
+3. **Update Price Page**  
+    Admins update the energy price per kWh, interacting with the contract’s pricing mechanism.  
+    ![Update Price Page](./screenshots/adminInterface/UpdatePricePage.png)
+    
+4. **Manage Users Page**  
+    Admins view and manage user accounts, including authorization for energy trading.  
+    ![Manage Users Page](./screenshots/adminInterface/manageUsersPage.png)
+    
+5. **User Details Page**  
+    Admins view detailed information about individual users, such as purchase history and account status.  
+    ![User Details Page](./screenshots/adminInterface/userDetailsPage.png)
+    
+6. **Manage Requests Page**  
+    Admins handle pending requests, such as energy addition or user authorization requests.  
+    ![Manage Requests Page](./screenshots/adminInterface/requestsPage.png)
+    
+
 ## Quick Start Guide
 
 ### Prerequisites
 
 - **Node.js**: v18.x (e.g., v18.20.4). Install via [nodejs.org](https://nodejs.org/) or `nvm: nvm install 18 && nvm use 18`.
 - **npm**: v9.x or later (bundled with Node.js).
-- **MetaMask**: For Hardhat testnet interaction (optional).
+- **MetaMask**: For Hardhat testnet interaction (required for Web3 integration).
 - **Firebase Account**: For `solarfarm_ui` authentication and database.
 - **VS Code**: Recommended with extensions:
     - Solidity (juanblanco.solidity)
@@ -72,7 +118,7 @@ The business mode user flow guides users through the process of logging in, acce
     - DotENV (mikestead.dotenv)
     - Mermaid Preview (bierner.markdown-mermaid)
     - Tailwind CSS IntelliSense (bradlc.vscode-tailwindcss)
-- **Browser Developer Tools**: Enable (F12) to inspect gas estimation logs.
+- **Browser Developer Tools**: Enable (F12) to inspect gas estimation logs and Web3 interactions.
 
 ### Setup
 
@@ -156,8 +202,9 @@ The business mode user flow guides users through the process of logging in, acce
     
     Access at [http://localhost:3000](http://localhost:3000/).
     
-9. **Verify Gas Estimation**
+9. **Verify Gas Estimation and Web3 Integration**
     
+    - Connect MetaMask to Hardhat testnet (localhost:8545).
     - Navigate to `/buySolar`, enter an amount (e.g., 20 kWh), and click 'Estimate Costs'.
     - Check console logs (F12) for gas estimates. Ensure sufficient `availableKWh` (add via `requestAddEnergy` and `confirmAddEnergy`).
     - If 'Nonce too low' occurs, restart `npx hardhat node` or use `mining: { auto: false, interval: 5000 }` in `hardhat.config.js`.
@@ -196,7 +243,7 @@ The business mode user flow guides users through the process of logging in, acce
 ### Notes
 
 - Use `hardhat-network-helpers` (`evm_increaseTime`) for time-based tests.
-- Validate flows against `docs/diagrams/` and `./screenshots/buisnessDemo`.
+- Validate flows against `docs/diagrams/` and `./screenshots/{buisnessDemo,technicalDemo,adminDemo}`.
 
 ## Deployment Guide
 
@@ -224,7 +271,8 @@ The business mode user flow guides users through the process of logging in, acce
 4. **Verify**
     - Check console for addresses.
     - Test at [http://localhost:3000](http://localhost:3000/).
-    - Validate gas estimation on `/buySolar`.
+    - Validate gas estimation and Web3 interactions on `/buySolar`.
+    - Verify admin functionality on `/admin/*` pages using an admin account (e.g., `alice.smith@example.com`).
 
 ## Visual Documentation
 
@@ -236,14 +284,6 @@ The business mode user flow guides users through the process of logging in, acce
     - `purchase-energy-flow.mmd`: Purchase flow with gas estimation.
     - `add-energy-flow.mmd`: Add energy flow.
     - `update-price-flow.mmd`: Update price flow.
-- **Screenshots (`./screenshots/buisnessDemo/`)**:
-    - `signin.png`: Sign-in page.
-    - `signup.png`: Sign-up page.
-    - `unauuthDashboard.png`: Unauthenticated dashboard.
-    - `buysolarPage.png`: Energy purchase page.
-    - `confirmCommit.png`: Commit purchase confirmation.
-    - `confirmReveal.png`: Reveal purchase confirmation.
-    - `ordersPage.png`: Order history page.
 - **Render**: Use VS Code Mermaid Preview or [mermaid.live](https://mermaid.live/) for diagrams. View screenshots in markdown preview or directly.
 
 ## Contributing Guidelines
@@ -264,7 +304,7 @@ The business mode user flow guides users through the process of logging in, acce
     ```
     
 3. **Make Changes**
-    - Update `contracts/`, `test/`, `scripts/`, `solarfarm_ui/`, `docs/diagrams/`, or `./screenshots/buisnessDemo`.
+    - Update `contracts/`, `test/`, `scripts/`, `solarfarm_ui/`, `docs/diagrams/`, or `./screenshots/{buisnessDemo,technicalDemo,adminDemo}`.
     - Format with Prettier.
     - Update tests, diagrams, and screenshots if needed.
     - Modify gas estimation in `utils/contract.js` or tests if applicable.
@@ -303,6 +343,8 @@ The business mode user flow guides users through the process of logging in, acce
 
 ## Changelog
 
+- **August 03, 2025**: Added Admin Dashboard Energy Management Interface section to README with screenshots (`adminDashboard.png`, `addEnergyPage.png`, `UpdatePricePage.png`, `manageUsersPage.png`, `userDetailsPage.png`, `requestsPage.png`) in `./screenshots/adminDemo` with clear captions (02:21 PM EEST).
+- **August 03, 2025**: Updated Technical Mode Web3 Integration section in README to include specific placeholders for MetaMask commit and reveal screenshots (`commitPurchase.png`, `revealPurchase.png`) in `./screenshots/technicalDemo` with clear captions (02:13 PM EEST).
 - **August 03, 2025**: Embedded screenshots with clear captions in the Business Mode User Flow section of README.md (01:15 PM EEST).
 - **August 03, 2025**: Added business mode user flow with screenshots in `./screenshots/buisnessDemo` (signin, signup, unauuthDashboard, buysolarPage, confirmCommit, confirmReveal, ordersPage) to README (01:10 PM EEST).
 - **July 30, 2025**: Added gas estimation feature for commit and reveal purchases, including UI integration and error handling (11:55 AM EEST).

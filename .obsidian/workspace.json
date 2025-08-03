@@ -168,8 +168,21 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "3c1cf16dd5d8f70f",
+  "active": "0a071a497ea0c522",
   "lastOpenFiles": [
+    "screenshots/adminInterface/userDetailsPage.png",
+    "screenshots/adminInterface/UpdatePricePage.png",
+    "screenshots/adminInterface/requestsPage.png",
+    "screenshots/adminInterface/manageUsersPage.png",
+    "screenshots/adminInterface/adminDashboard.png",
+    "screenshots/adminInterface/addEnergyPage.png",
+    "screenshots/adminInterface",
+    "screenshots/Untitled.md",
+    "README.md",
+    "screenshots/technicalDemo/reveal.png",
+    "screenshots/technicalDemo/metamask.png",
+    "screenshots/technicalDemo/commit.png",
+    "screenshots/technicalDemo",
     "Pasted image 20250803132700.png",
     "screenshots/buisnessDemo/authDashboard.png"
   ]
