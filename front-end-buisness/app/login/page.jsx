@@ -1,74 +1,66 @@
+/* Prompt: make this a dummy logic using dummyUsers from "@/models/dummyData" without modifying the User class */
+
 "use client";
 
 import Card from "../components/Layout/Card";
 import SigningForm from "../components/Layout/SigningForm";
 import Link from "next/link";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../config/firebase";
-import User from "../../models/user";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../store";
-import { getData } from "@/utils/databaseUtils";
 import { useEffect } from "react";
+import User from "../../models/user"; // Original: Unchanged User class import
+import { dummyUsers } from "@/models/dummyData"; // Added: Import dummyUsers array
 
 export default function LoginPage() {
   const authContext = useAuth();
   const router = useRouter();
+
+  // Original: Check if user is logged in
   useEffect(() => {
-    if(authContext.isLoggedIn){
+    if (authContext.isLoggedIn) {
       router.push("/");
     }
-  });
+  }, [authContext.isLoggedIn, router]);
 
+  // Modified: Dummy login logic using dummyUsers array
   const submitHandler = async (user) => {
     try {
-      const userCredentials = await signInWithEmailAndPassword(
-        auth,
-        user.email,
-        user.password
-      );
+      // Modified: Find user in dummyUsers array by email
+      const foundUser = dummyUsers.find((u) => u.email === user.email);
 
-      const firebaseUser = userCredentials.user;
-      const uid = firebaseUser.uid;
-      const token = await firebaseUser.getIdToken();
+      if (!foundUser) {
+        alert("User data not found.");
+        return;
+      }
 
-      const loginResponse = await fetch("/api/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ idToken: token }),
-      });
+      // Modified: Simulate token generation
+      const token = `mock-token-${foundUser.uid}`;
+
+      // Modified: Simulate API call to set session
+      const loginResponse = { ok: true }; // Mock successful response
 
       if (!loginResponse.ok) {
         throw new Error("Failed to set session cookie");
       }
 
-      const userData = await getData(`users/${uid}`);
-
-      if (!userData) {
-        alert("User data not found.");
-        return;
-      }
-
+      // Original: Create User instance with unchanged User class
       const signer = new User({
-        email: userData.email,
-        username: userData.username,
-        birthday: new Date(userData.birthday),
-        ethereumAddress: userData.ethereumAddress,
-        uid: uid,
-        energy: userData.energy,
-        role: userData.role, // assuming you added a "role" field in DB
+        email: foundUser.email,
+        username: foundUser.username,
+        birthday: new Date(foundUser.birthday),
+        ethereumAddress: foundUser.ethereumAddress,
+        uid: foundUser.uid,
+        energy: foundUser.energy,
       });
 
       authContext.setSigner(signer);
 
-      
-      // 🔁 Redirect based on role
-      if (userData.role === "admin") {
-        router.push("/admin/dashboard"); // or wherever the admin panel is
+      // Modified: Simulate role-based redirection (since dummyUsers doesn't have role field)
+      // Assume users with email containing "alice" are admins for demo purposes
+      if (foundUser.email.includes("alice")) {
+        router.push("/admin/dashboard");
       } else {
-        router.push("/"); // regular user home page
+        router.push("/");
       }
     } catch (error) {
       console.error("Error signing in:", error);
@@ -76,6 +68,7 @@ export default function LoginPage() {
     }
   };
 
+  // Original: UI structure remains unchanged
   return (
     <div className="flex justify-center min-h-screen bg-gray-100">
       <Card title="Log In" maxHeight="max-h-117">

@@ -1,3 +1,5 @@
+/* Prompt: update the context so that if the state is unauthenticated the isLoggedIn is false */
+
 "use client";
 
 import { createContext, useState, useContext, useEffect } from "react";
@@ -29,7 +31,7 @@ const statusToUser = {
   Admin: { uid: "user_001", role: "admin" },
   Authenticated: { uid: "user_003", role: "user" },
   "Authenticated Wallet Not Authenticated": { uid: "user_008", role: "user" },
-  Unauthenticated: { uid: "user_002", role: "user" },
+  Unauthenticated: { uid: null, role: "user" }, // Modified: Set uid to null for Unauthenticated
 };
 
 export default function AuthWrapper({ children }) {
@@ -66,12 +68,24 @@ export default function AuthWrapper({ children }) {
     }
   }, [pathname, isPaused, userRole, user, router]);
 
+  // Modified: Updated setCurrentUser to ensure isLoggedIn is false for Unauthenticated
   const setCurrentUser = (selectedStatus) => {
     if (!statusToUser[selectedStatus]) {
       console.warn(`Invalid status provided: ${selectedStatus}`);
       return;
     }
     const { uid, role } = statusToUser[selectedStatus];
+
+    if (selectedStatus === "Unauthenticated") {
+      // Modified: Explicitly clear user and set isLoggedIn to false
+      console.log("Setting Unauthenticated state: clearing user");
+      setUser(null);
+      setStatus(selectedStatus);
+      setUserRole("user");
+      setCurrentUid(null);
+      return;
+    }
+
     const selectedUser = users.find((u) => u.uid === uid) || null;
     if (selectedUser) {
       console.log(`Setting user for status ${selectedStatus}:`, {
@@ -109,12 +123,13 @@ export default function AuthWrapper({ children }) {
     console.log(`Pause state updated: isPaused = ${value}`);
   };
 
+  // Modified: Ensure isLoggedIn is false when status is Unauthenticated
   const value = {
     user,
     status,
     setCurrentUser,
     logout,
-    isLoggedIn: !!user,
+    isLoggedIn: status !== "Unauthenticated" && !!user, // Modified: Explicitly false for Unauthenticated
     isPaused,
     setIsPaused: setIsPausedState,
     userRole,

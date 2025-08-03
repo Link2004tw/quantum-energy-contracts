@@ -1,12 +1,11 @@
+/* Prompt: add signup and signin links for unauthenticated users to the Navbar component with dummy logic */
+
 "use client";
 
 import React, { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import NavLink from "../UI/NavLink";
-import { useAuth } from "@/app/store"; 
-
-// AI Prompt: "Rewrite a React Navbar component to integrate with an AuthContext providing user, status, and setCurrentUser, using four statuses (Admin, Authenticated, Authenticated Wallet Not Authenticated, Unauthenticated) for dropdown selection, setting the user via setCurrentUser(status), granting Authenticated Wallet Not Authenticated the same navigation access as Authenticated, filtering links by status, maintaining Tailwind CSS styling, for a Web3 energy trading demo."
-// AI-generated Navbar logic, modified to grant Authenticated Wallet Not Authenticated the same access as Authenticated, using status for link filtering.
+import { useAuth } from "@/app/store";
 
 export default function Navbar() {
   const router = useRouter();
@@ -28,7 +27,7 @@ export default function Navbar() {
     [setCurrentUser]
   );
 
-  // Define links with status-based access
+  // Modified: Added signup and signin links for Unauthenticated status
   const links = [
     {
       href: "/",
@@ -70,9 +69,20 @@ export default function Navbar() {
       label: "Manage Requests",
       statuses: ["Admin"],
     },
+    // Added: Signup and Signin links for Unauthenticated users
+    {
+      href: "/signup",
+      label: "Sign Up",
+      statuses: ["Unauthenticated"],
+    },
+    {
+      href: "/login",
+      label: "Sign In",
+      statuses: ["Unauthenticated"],
+    },
   ];
 
-  // Filter links based on selected status
+  // Modified: Filter links based on selected status, including new links
   const visibleLinks = status ? links.filter((link) => link.statuses.includes(status)) : [];
 
   return (
