@@ -1,16 +1,16 @@
-'use client';
+"use client";
 
-import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
-import { auth } from '../../config/firebase';
-import User from '../../models/user';
-import React from 'react';
-import Card from '../components/Layout/Card';
-import SigningForm from '../components/Layout/SigningForm';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../store';
-import { saveData } from '@/utils/databaseUtils';
-import AuthorizationRequest from '@/models/request';
+import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { auth } from "../../config/firebase";
+import User from "../../models/user";
+import React from "react";
+import Card from "../components/Layout/Card";
+import SigningForm from "../components/Layout/SigningForm";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../store";
+import { saveData } from "@/utils/databaseUtils";
+import AuthorizationRequest from "@/models/request";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -21,13 +21,13 @@ export default function SignUpPage() {
     const auth = getAuth();
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
-      throw new Error('No authenticated user');
+      throw new Error("No authenticated user");
     }
-    const response = await fetch('/api/check-registered', {
-      method: 'POST',
+    const response = await fetch("/api/check-registered", {
+      method: "POST",
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({ address: ethAddress }),
     });
@@ -35,7 +35,7 @@ export default function SignUpPage() {
     if (response.ok) {
       return data;
     } else {
-      throw new Error(data.error || 'Failed to check Ethereum address');
+      throw new Error(data.error || "Failed to check Ethereum address");
     }
   };
 
@@ -51,7 +51,9 @@ export default function SignUpPage() {
         const uid = userCredentials.user.uid;
 
         // Check if Ethereum address exists
-        const addressCheck = await checkAndRegisterAddress(user._ethereumAddress);
+        const addressCheck = await checkAndRegisterAddress(
+          user._ethereumAddress
+        );
         console.log(addressCheck);
         // Save user data to Realtime Database
         const userData = {
@@ -73,27 +75,25 @@ export default function SignUpPage() {
             {
               name: user._username,
               email: user._email,
-              reason: 'New user signup requesting access to EnergyContract',
+              reason: "New user signup requesting access to EnergyContract",
               timestamp: new Date().toISOString(),
             }
           );
 
           await saveData(authRequest.toJSON(), `requests/${uid}`);
-          console.log(
-            'Authorization request created and saved:',
-            authRequest.toNotificationString()
-          );
         } else {
-          console.log('Ethereum address already registered, skipping authorization request');
+          console.log(
+            "Ethereum address already registered, skipping authorization request"
+          );
         }
 
         authContext.setSigner(user);
-        router.push('/');
+        router.push("/");
       } else {
-        throw new Error('Invalid user data');
+        throw new Error("Invalid user data");
       }
     } catch (error) {
-      console.error('Error signing up or saving data:', error.message);
+      console.error("Error signing up or saving data:", error.message);
       alert(`Failed to sign up: ${error.message}`);
     }
   };
@@ -103,7 +103,7 @@ export default function SignUpPage() {
       <Card title="Sign Up" maxHeight="max-h-196">
         <SigningForm mode="signUp" onSubmit={submitHandler} />
         <p className="text-center mt-4 text-indigo-400">
-          Already have an account?{' '}
+          Already have an account?{" "}
           <Link href="/login" className="text-blue-500 hover:underline">
             Sign In
           </Link>

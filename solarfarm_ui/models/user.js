@@ -2,7 +2,6 @@ class User {
   constructor({
     email,
     username,
-    password,
     birthday,
     ethereumAddress,
     uid,
@@ -10,7 +9,6 @@ class User {
   }) {
     this._email = email || "";
     this._username = username || "";
-    this._password = password || "";
     this._birthday = birthday ? new Date(birthday) : null;
     this._ethereumAddress = this._validateEthereumAddress(ethereumAddress)
       ? ethereumAddress

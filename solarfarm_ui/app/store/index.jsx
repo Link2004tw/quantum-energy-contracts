@@ -11,25 +11,21 @@ const initialValue = {
   setSigner: () => {},
   isLoggedIn: false,
   signOutHandler: () => {},
-  isOwner: false,
-  setIfOwner: async (address) => {},
 };
 const AuthContext = createContext(initialValue);
 
 export default function AuthWrapper({ children }) {
   const [user, setUser] = useState(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [isOwner, setIsOwner] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         const uid = user.uid;
         const userData = await getData(`users/${uid}`);
-        const token = await user.getIdToken();
 
         if (!userData) {
-          alert("User data not found.");
+          //alert("User data not found.");
           return;
         }
         const signer = new User({
@@ -39,7 +35,6 @@ export default function AuthWrapper({ children }) {
           ethereumAddress: userData.ethereumAddress,
           uid: uid,
           energy: userData.energy,
-          role: userData.role, // assuming you added a "role" field in DB
         });
 
         setUser(signer);
@@ -76,8 +71,6 @@ export default function AuthWrapper({ children }) {
     setSigner,
     isLoggedIn,
     signOutHandler: signOutHandler,
-    isOwner,
-    setIfOwner,
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

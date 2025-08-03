@@ -5,7 +5,6 @@ import { useAuth } from "@/app/store";
 import User from "@/models/user";
 import UnderlineButton from "../UI/UnderlineButton";
 import PrimaryButton from "../UI/PrimaryButton";
-import Card from "./Card";
 import { ethers } from "ethers";
 import Modal from "./Model";
 import { truncateEthereumAddress } from "@/utils/tools";
@@ -50,7 +49,6 @@ export default function SigningForm({
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -249,7 +247,10 @@ export default function SigningForm({
               Connected Wallet:{" "}
               {truncateEthereumAddress(formData.ethereumAddress)}
               <div className="pt-4">
-                <PrimaryButton title="Change Wallet" onClick={handleConnectWallet} />
+                <PrimaryButton
+                  title="Change Wallet"
+                  onClick={handleConnectWallet}
+                />
               </div>
             </div>
           ) : (
