@@ -20,6 +20,9 @@ import Modal from "../components/Layout/Model";
 import CommittedOrders from "@/models/commitedOrders";
 import { saveData } from "@/utils/databaseUtils";
 import { ethers } from "ethers";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/config/firebase";
+import { truncateTransactionHash } from "@/utils/tools";
 
 export default function BuySolarPage() {
   const router = useRouter();
@@ -31,6 +34,8 @@ export default function BuySolarPage() {
   const [successModalOpen, setSuccessModalOpen] = useState(false);
   const [successDetails, setSuccessDetails] = useState(null);
   const [ethUsdPrice, setEthUsdPrice] = useState(null);
+  const [commitingModalOpen, setCommitingModalOpen] = useState(false);
+  const [committingHash, setCommitingHash] = useState(null);
 
   const { user } = useAuth();
 
@@ -49,9 +54,12 @@ export default function BuySolarPage() {
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
-    }
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.push("/login");
+      }
+    });
+    return () => unsubscribe();
   }, [user]);
 
   const handleCancelPurchase = () => {
@@ -59,7 +67,11 @@ export default function BuySolarPage() {
     setPendingPurchase(null);
     setAmount("");
   };
-
+  const handleCancelCommitPurchase = () => {
+    setCommitingModalOpen(false);
+    setPendingPurchase(null);
+    setAmount("");
+  };
   const handleCloseSuccessModal = () => {
     setSuccessModalOpen(false);
     setSuccessDetails(null);
@@ -67,7 +79,7 @@ export default function BuySolarPage() {
 
   const handleConfirmPurchase = async () => {
     if (!pendingPurchase) return;
-
+    setCommitingModalOpen(false);
     const {
       parsedAmount,
       priceEth,
@@ -76,7 +88,6 @@ export default function BuySolarPage() {
       commitGasCost,
     } = pendingPurchase;
     setError(null);
-    setModalOpen(false);
 
     try {
       // Check if commitment has expired (5 minutes = 300,000 ms)
@@ -96,10 +107,10 @@ export default function BuySolarPage() {
         parsedAmount,
         user
       );
-      const { gasCostInEth, energyCostInEth, totalCostInEth, gasEstimate } =
+      const { gasCostInEth, energyCostInEth, totalCostInEth } =
         gasCostForReveal;
       const { ethAmount, usdAmount } = await convertEthToUsd(
-        totalCostInEth,
+        gasCostInEth,
         "hardhat"
       );
       console.log(ethAmount, usdAmount);
@@ -138,7 +149,7 @@ export default function BuySolarPage() {
         parsedAmount,
         priceEth,
         txHash,
-        costUsd: usdAmount / 1e10,
+        costUsd: usdAmount,
         costEth: ethAmount,
       });
       setSuccessModalOpen(true);
@@ -157,6 +168,7 @@ export default function BuySolarPage() {
       console.error("Error revealing purchase:", err);
       setError(err.message);
       setSuccessModalOpen(true);
+      setCommitingModalOpen(false);
       setSuccessDetails({ error: err.message });
     }
   };
@@ -181,8 +193,9 @@ export default function BuySolarPage() {
     }
     try {
       // Check authorization
+      console.log("checking is authorized");
       const isAuthorized = await checkIfAuthorized(user);
-      console.log(isAuthorized);
+
       if (!isAuthorized) {
         alert(
           "You are not Authorized please wait till the admin authorizes your wallet"
@@ -197,6 +210,7 @@ export default function BuySolarPage() {
       }
 
       const priceEth = await getCost(parsedAmount, "hardhat");
+      console.log(priceEth);
       const gasCostForCommitment = await estimateGasForCommitPurchase(
         "hardhat",
         parsedAmount,
@@ -207,30 +221,44 @@ export default function BuySolarPage() {
 
       console.log(totalCostInEth);
       const gasCostForCommitmentUsd = await convertEthToUsd(
-        totalCostInEth,
+        gasCostInEth,
         "hardhat"
       );
       const usdCost = gasCostForCommitmentUsd.usdAmount;
       const ethCost = gasCostForCommitmentUsd.ethAmount;
       console.log(gasCostForCommitmentUsd);
       // Commit purchase
-      const hash = await commitPurchase("hardhat", parsedAmount, {
-        _uid: user._uid,
-        _ethereumAddress: user._ethereumAddress,
-      });
 
       // Store commitment details with timestamp
       setPendingPurchase({
         parsedAmount,
         priceEth,
         commitTimestamp: Date.now(),
-        commitTxHash: hash,
-        commitGasCostUsd: usdCost / 1e10,
+        commitGasCostUsd: usdCost,
         commitGasCostEth: ethCost,
       });
       setModalOpen(true);
     } catch (err) {
       console.error("Error preparing purchase:", err);
+      setError(err.message);
+      setSuccessModalOpen(true);
+      setSuccessDetails({ error: err.message });
+    }
+  };
+
+  const confirmCommitHandler = async () => {
+    try {
+      setModalOpen(false);
+      const parsedAmount = parseInt(amount);
+      const hash = await commitPurchase("hardhat", parsedAmount, {
+        _uid: user._uid,
+        _ethereumAddress: user._ethereumAddress,
+      });
+      setCommitingHash(hash);
+      setCommitingModalOpen(true);
+    } catch (err) {
+      console.error("Error preparing purchase:", err);
+      setCommitingModalOpen(false);
       setError(err.message);
       setSuccessModalOpen(true);
       setSuccessDetails({ error: err.message });
@@ -249,8 +277,8 @@ export default function BuySolarPage() {
             {availableEnergy !== null
               ? `(${availableEnergy} kWh available)`
               : ""}
-              <br/>
-              {ethUsdPrice} USD/Eth
+            <br />
+            {ethUsdPrice} USD/Eth
             <input
               type="number"
               name="amount"
@@ -275,7 +303,7 @@ export default function BuySolarPage() {
       <Modal
         isOpen={modalOpen}
         onClose={handleCancelPurchase}
-        onConfirm={handleConfirmPurchase}
+        onConfirm={confirmCommitHandler}
         isCancel={true}
         isConfirm={true}
       >
@@ -284,15 +312,30 @@ export default function BuySolarPage() {
         </h2>
         <p className="text-gray-600">
           Purchase {pendingPurchase?.parsedAmount} kWh for{" "}
-          {Number(pendingPurchase?.priceEth) +
-            Number(pendingPurchase?.commitGasCostEth)}{" "}
-          ETH? = {pendingPurchase?.parsedAmount * 0.12}$? +{" "}
+          {Number(pendingPurchase?.priceEth)} +
+          {Number(pendingPurchase?.commitGasCostEth)} ETH? ={" "}
+          {pendingPurchase?.parsedAmount * 0.12}$ +{" "}
           {pendingPurchase?.commitGasCostUsd}$ gas cost ={" "}
           {pendingPurchase?.parsedAmount * 0.12 +
-            pendingPurchase?.commitGasCostUsd}
+            Number(pendingPurchase?.commitGasCostUsd)}
         </p>
         <br />
         <p>revealing fees may apply</p>
+      </Modal>
+      <Modal
+        isOpen={commitingModalOpen}
+        isCancel={true}
+        isConfirm={true}
+        onClose={handleCancelCommitPurchase}
+        onConfirm={handleConfirmPurchase}
+      >
+        <h2>Order Commitment Confirmation</h2>
+        <p>
+          Transaction Hash:{" "}
+          {committingHash ? truncateTransactionHash(committingHash) : null}
+        </p>
+        <p>Please press the Confirm button to finalize your order.</p>
+        <p>The commitment will expire in 5 minutes.</p>
       </Modal>
       <Modal
         isOpen={successModalOpen}

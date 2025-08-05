@@ -170,6 +170,7 @@
   },
   "active": "0a071a497ea0c522",
   "lastOpenFiles": [
+    "artifacts/build-info/302e81d39cfb813561861028ff03184e.json",
     "screenshots/adminInterface/userDetailsPage.png",
     "screenshots/adminInterface/UpdatePricePage.png",
     "screenshots/adminInterface/requestsPage.png",
@@ -183,7 +184,6 @@
     "screenshots/technicalDemo/metamask.png",
     "screenshots/technicalDemo/commit.png",
     "screenshots/technicalDemo",
-    "Pasted image 20250803132700.png",
-    "screenshots/buisnessDemo/authDashboard.png"
+    "Pasted image 20250803132700.png"
   ]
 }

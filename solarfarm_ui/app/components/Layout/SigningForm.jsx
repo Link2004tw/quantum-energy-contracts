@@ -75,7 +75,8 @@ export default function SigningForm({
         if (formData.password !== formData.confirmPassword) {
           throw new Error("Passwords do not match!");
         }
-        const newUser = new User({
+
+        onSubmit({
           email: formData.email,
           username: formData.username,
           password: formData.password,
@@ -83,7 +84,6 @@ export default function SigningForm({
           ethereumAddress: formData.ethereumAddress,
           energy: 0,
         });
-        onSubmit(newUser);
         setFormData({
           email: "",
           password: "",

@@ -41,57 +41,52 @@ export default function SignUpPage() {
 
   const submitHandler = async (user) => {
     try {
-      if (user instanceof User) {
-        // Sign up with Firebase Authentication
-        const userCredentials = await createUserWithEmailAndPassword(
-          auth,
-          user._email,
-          user._password
+      //if (user instanceof User) {
+      // Sign up with Firebase Authentication
+      const userCredentials = await createUserWithEmailAndPassword(
+        auth,
+        user.email,
+        user.password
+      );
+      const uid = userCredentials.user.uid;
+
+      // Check if Ethereum address exists
+      const addressCheck = await checkAndRegisterAddress(user.ethereumAddress);
+      console.log(addressCheck);
+      // Save user data to Realtime Database
+      const userData = {
+        email: user.email,
+        username: user.username,
+        birthday: new Date(user.birthday).toDateString(),
+        ethereumAddress: user.ethereumAddress,
+        createdAt: new Date().toISOString(),
+        energy: user.energy,
+      };
+      await saveData(userData, `users/${uid}`);
+
+      // If address doesn't exist, create and save authorization request
+
+      if (!addressCheck.exists) {
+        const authRequest = new AuthorizationRequest(
+          uid,
+          user._ethereumAddress,
+          {
+            name: user._username,
+            email: user._email,
+            reason: "New user signup requesting access to EnergyContract",
+            timestamp: new Date().toISOString(),
+          }
         );
-        const uid = userCredentials.user.uid;
 
-        // Check if Ethereum address exists
-        const addressCheck = await checkAndRegisterAddress(
-          user._ethereumAddress
-        );
-        console.log(addressCheck);
-        // Save user data to Realtime Database
-        const userData = {
-          email: user._email,
-          username: user._username,
-          birthday: user._birthday.toDateString(),
-          ethereumAddress: user._ethereumAddress,
-          createdAt: new Date().toISOString(),
-          energy: user._energy,
-        };
-        await saveData(userData, `users/${uid}`);
-
-        // If address doesn't exist, create and save authorization request
-
-        if (!addressCheck.exists) {
-          const authRequest = new AuthorizationRequest(
-            uid,
-            user._ethereumAddress,
-            {
-              name: user._username,
-              email: user._email,
-              reason: "New user signup requesting access to EnergyContract",
-              timestamp: new Date().toISOString(),
-            }
-          );
-
-          await saveData(authRequest.toJSON(), `requests/${uid}`);
-        } else {
-          console.log(
-            "Ethereum address already registered, skipping authorization request"
-          );
-        }
-
-        authContext.setSigner(user);
-        router.push("/");
+        await saveData(authRequest.toJSON(), `requests/${uid}`);
       } else {
-        throw new Error("Invalid user data");
+        console.log(
+          "Ethereum address already registered, skipping authorization request"
+        );
       }
+
+      authContext.setSigner(user);
+      router.push("/");
     } catch (error) {
       console.error("Error signing up or saving data:", error.message);
       alert(`Failed to sign up: ${error.message}`);

@@ -20,7 +20,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     uint256 public constant ADD_ENERGY_DELAY = 2 minutes; // Delay for adding energy
     uint256 public constant COMMIT_REVEAL_WINDOW = 5 minutes; // Commitment reveal window
     //uint256 public constant COMMIT_COOLDOWN = 5 minutes; // Cooldown between commitments
-    uint256 public constant COMMIT_COOLDOWN = 5 minutes; // Cooldown between commitments
+    uint256 public constant COMMIT_COOLDOWN = 0.5 minutes; // Cooldown between commitments
 
     uint256 public constant MAX_AUTHORIZED_PARTIES = 100; // Max authorized parties
     uint256 public constant MAX_GAS_FOR_CALL = 5_000_000; // Gas limit for external calls
@@ -290,6 +290,7 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         );
     }
 
+    // Prompt: Fix calculateRequiredPayment to correctly convert _ethPriceUSD (USD * 1e8) to cents, returning correct cost in wei for 100 kWh at $0.12/kWh with 1 ETH = $2000 USD
     function calculateRequiredPayment(
         uint256 _kWh,
         uint256 _ethPriceUSD
@@ -301,12 +302,9 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
 
         uint256 totalCostUSDCents = _kWh * PRICE_PER_KWH_USD_CENTS;
         if (totalCostUSDCents > 2 ** 128) revert("Cost overflow");
-        uint256 ethPriceUSDcents = _ethPriceUSD / 1e2; // Assuming _ethPriceUSD has 8 decimals
+        // Changed: Divide _ethPriceUSD by 1e6 to convert USD * 1e8 to cents
+        uint256 ethPriceUSDcents = _ethPriceUSD / 1e6; // e.g., 2e11 / 1e6 = 2e5 = 200000 cents
         uint256 totalCostWei = (totalCostUSDCents * 1e18) / ethPriceUSDcents;
-        // Debug output: split into multiple console.log calls to avoid argument limit
-        //console.log("totalCostUSDCents:", totalCostUSDCents);
-        //console.log("ethPriceUSDcents:", ethPriceUSDcents);
-        //console.log("totalCostWei:", totalCostWei);
         return totalCostWei;
     }
 

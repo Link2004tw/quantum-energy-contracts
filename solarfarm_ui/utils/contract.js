@@ -5,7 +5,6 @@ import { Transaction } from "@/models/transaction";
 
 // Contract ABI and address (replace with your deployed address)
 const CONTRACT_ADDRESS = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"; // Update with your deployed EnergyContract address
-
 const MOCKP_RICE_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 //0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
@@ -13,7 +12,7 @@ const MOCKP_RICE_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 const NETWORK_CONFIG = {
   hardhat: {
     chainId: "31337",
-    rpcUrl: "http://127.0.0.1:8545",
+    rpcUrl: "http://192.168.1.13:8545",
     chainName: "Hardhat",
     currency: { name: "ETH", symbol: "ETH", decimals: 18 },
     blockExplorerUrls: [],
@@ -160,7 +159,7 @@ export const getSolarFarm = async (networkName = "hardhat") => {
   }
 };
 
-export const getLatestEthPriceWC = async(networkName ="hardhat") => {
+export const getLatestEthPriceWC = async (networkName = "hardhat") => {
   try {
     // Use signer to call getLatestEthPrice as it updates the cache
     const contract = await getContract(
@@ -169,12 +168,58 @@ export const getLatestEthPriceWC = async(networkName ="hardhat") => {
       CONTRACT_ABI,
       false
     );
+
     const price = await contract.getLatestEthPriceWithoutCaching();
+    //console.log("Price: ",price)
     return Number(price) / 1e18;
-  }catch(error){
-    console.log(error);
+  } catch (error) {
+    // Changed: Log full error and error.data for debugging
+    console.error("Error fetching ETH price:", error);
+    console.error("Error data:", error.data);
+
+    // Changed: Try decoding error with CONTRACT_ABI
+    let errorMessage =
+      "Failed to fetch ETH price. Please check your connection and try again.";
+    try {
+      const iface = new ethers.Interface(CONTRACT_ABI);
+      // Handle nested error.data (common in ethers.js for certain providers)
+      const errorData = error.data || (error.error && error.error.data);
+      if (errorData) {
+        const decodedError = iface.parseError(errorData);
+        if (decodedError && decodedError.name === "PriceFeedStale") {
+          const [timestamp, maxAge] = decodedError.args;
+          // Changed: Specific alert for PriceFeedStale
+          errorMessage = `Price feed is stale (timestamp: ${timestamp}, max age: ${maxAge} seconds). Please try again later.`;
+          alert(errorMessage);
+          throw new Error(
+            `PriceFeedStale: Timestamp ${timestamp} exceeds max age ${maxAge}`
+          );
+        }
+      }
+    } catch (decodeError) {
+      // Changed: Handle decoding failure and check error message for PriceFeedStale
+      console.error("Could not decode error:", decodeError);
+      if (error.message.includes("PriceFeedStale")) {
+        // Extract timestamp and maxAge from error message (fallback)
+        const match = error.message.match(
+          /Timestamp (\d+) exceeds max age (\d+)/
+        );
+        if (match) {
+          const [_, timestamp, maxAge] = match;
+          errorMessage = `Price feed is stale (timestamp: ${timestamp}, max age: ${maxAge} seconds). Please try again later.`;
+          alert(errorMessage);
+          throw new Error(
+            `PriceFeedStale: Timestamp ${timestamp} exceeds max age ${maxAge}`
+          );
+        }
+      }
+    }
+
+    // Changed: Generic alert for other errors
+    alert(errorMessage);
+    throw new Error(`Error fetching ETH price: ${error.message}`);
   }
-}
+};
 // Call getLatestEthPrice()
 export const getLatestEthPrice = async (networkName = "hardhat") => {
   try {
@@ -204,6 +249,7 @@ export const getLatestEthPrice = async (networkName = "hardhat") => {
   }
 };
 
+// Prompt: Fix getCost to return cost in ETH for energy amount (kWh) at $0.12/kWh, addressing incorrect output of 0.0000006 ETH for 100 kWh, knowing 1 ETH = 2000 USD
 export const getCost = async (amount, networkName = "hardhat") => {
   try {
     const contract = await getContract(
@@ -212,16 +258,29 @@ export const getCost = async (amount, networkName = "hardhat") => {
       CONTRACT_ABI,
       false
     );
-    //console.log("Calculating cost for amount:", amount);
-    if (amount <= 0) {
-      throw new Error("Amount must be greater than zero");
+    // Validate amount as energy (kWh)
+    const energy = Number(amount);
+    if (isNaN(energy) || energy <= 0) {
+      throw new Error("Energy amount must be a valid number greater than zero");
     }
-    const ethPrice = BigInt(parseInt(await getLatestEthPrice(networkName)));
-    const price = await contract.calculateRequiredPayment(
-      amount,
-      ethPrice / BigInt(1e10)
+
+    // Get ETH price and adjust for contract's cents-based scaling
+    const ethPriceInUsd = await getLatestEthPriceWC(); // Returns 2000 (USD/ETH)
+    console.log(`ETH price in USD: ${ethPriceInUsd}`); // Log for debugging
+    const ethPrice = BigInt(Math.round(ethPriceInUsd)); // Convert to BigInt (2000)
+    // Changed: Scale by 100 to convert USD to cents, then by 1e8 (2000 * 100 * 1e8 = 2e13)
+    const ethPriceScaled = ethPrice; // USD to cents
+
+    // Pass energy amount (kWh) to contract
+    const priceInWei = await contract.calculateRequiredPayment(
+      energy, // Pass kWh directly
+      ethPriceScaled * BigInt(1e8) // Scale to cents * 1e8 (2e13 * 1e8 = 2e21)
     );
-    return ethers.formatUnits(price, 18); // Convert to ETH
+
+    // Convert contract output to ETH and format to 6 decimals
+    const priceInEth = ethers.formatUnits(priceInWei, 18); // Convert wei to ETH
+    console.log(`Contract output in ETH: ${priceInEth}`); // Log for debugging
+    return Number(priceInEth).toFixed(6); // Return ETH as string with 6 decimals
   } catch (error) {
     throw new Error(`Error calculating cost: ${error.message}`);
   }
@@ -290,20 +349,6 @@ export const commitPurchase = async (networkName = "hardhat", amount, user) => {
     const hash = getHashedCommitment(amount, nonce, user._ethereumAddress);
     // Calculate energy cost using getCost
 
-    //const { gasCostInEth, energyCostInEth, totalCostInEth, gasEstimate } =
-    //  estimateGasForCommitPurchase("hardhat", amount, user);
-    // Inform user of costs
-    // console.log("1");
-    // console.log(energyCostInEth);
-    // const confirmation = window.confirm(
-    //   `Energy Cost: ${energyCostInEth} ETH\n` +
-    //     `Estimated Gas Cost: ${gasCostInEth} ETH\n` +
-    //     `Total Estimated Cost: ${totalCostInEth} ETH\n` +
-    //     `Proceed with transaction? (As of 12:33 AM EEST, July 29, 2025)`
-    // );
-
-    //if (!confirmation) throw new Error("Transaction cancelled by user");
-
     // Execute transaction with estimated gas
     const tx = await contract.commitPurchase(hash);
     await tx.wait(); // Wait for transaction confirmation
@@ -322,6 +367,7 @@ export const estimateGasForCommitPurchase = async (
     if (amount > 1000) {
       throw new Error("Amount cannot be bigger than 1000 kWh");
     }
+    console.log("getting contract with signer");
     const contract = await getContract(
       networkName,
       CONTRACT_ADDRESS,
@@ -337,6 +383,7 @@ export const estimateGasForCommitPurchase = async (
     // Estimate gas for the transaction using the new syntax
     let gasEstimate;
     try {
+      console.log("getting gasEstimate 1");
       gasEstimate = await contract.commitPurchase.estimateGas(hash);
       console.log("Reveal Gas estimate:", gasEstimate.toString());
     } catch (estimateError) {
@@ -347,6 +394,8 @@ export const estimateGasForCommitPurchase = async (
     }
 
     // Get gas price with fallback
+    console.log("getting gasEstimate 2");
+
     const gasPrice = (await contract.runner.provider.getFeeData()).gasPrice;
     console.log(
       "Initial gas price from feeData:",
@@ -390,93 +439,105 @@ export const estimateGasForRevealPurchase = async (
   amount,
   user
 ) => {
-  // try {
-  if (!amount || amount <= 0 || amount > 1000) {
-    throw new Error("Amount must be between 1 and 1000 kWh");
-  }
-  if (!user || !user._ethereumAddress) {
-    throw new Error("User Ethereum address is required");
-  }
-  const contract = await getContract(
-    networkName,
-    CONTRACT_ADDRESS,
-    CONTRACT_ABI,
-    true // Use signer for estimation
-  );
-  const signer = await contract.runner.provider.getSigner();
-  const signerAddress = await signer.getAddress();
-
-  if (signerAddress.toLowerCase() !== user._ethereumAddress.toLowerCase()) {
-    throw new Error("Signer address does not match provided Ethereum address");
-  }
-
-  // Calculate required payment
-  await contract.getLatestEthPrice(); // Ensure the contract is ready
-  const ethPrice = await contract.getCachedEthPrice();
-  const totalCostWei = await contract.calculateRequiredPayment(
-    amount,
-    ethPrice / BigInt(10e10)
-  );
-
-  // Debug: Log contract instance
-
-  // Estimate gas for the transaction using the new syntax
-  let gasEstimate;
-  const nonce = getNonceFromUid(user._uid);
   try {
-    gasEstimate = await contract.revealPurchase.estimateGas(amount, nonce, {
-      value: totalCostWei,
-    });
-    console.log("Gas estimate for revealing:", gasEstimate.toString());
-  } catch (estimateError) {
-    console.error("estimateGas error details:", estimateError.data);
+    if (!amount || amount <= 0 || amount > 1000) {
+      throw new Error("Amount must be between 1 and 1000 kWh");
+    }
+    if (!user || !user._ethereumAddress) {
+      throw new Error("User Ethereum address is required");
+    }
+    console.log("getting gasEstimate 3");
+    const contract = await getContract(
+      networkName,
+      CONTRACT_ADDRESS,
+      CONTRACT_ABI,
+      true // Use signer for estimation
+    );
+    const signer = await contract.runner.provider.getSigner();
+    const signerAddress = await signer.getAddress();
 
-    if (estimateError.data && estimateError.data.startsWith("0x74cba217")) {
+    if (signerAddress.toLowerCase() !== user._ethereumAddress.toLowerCase()) {
       throw new Error(
-        "Transaction reverted: Insufficient energy available. Check available kWh and try a smaller amount."
+        "Signer address does not match provided Ethereum address"
       );
     }
+
+    // Calculate required payment
+    //await contract.getLatestEthPrice(); // Ensure the contract is ready
+    const ethPrice = await getLatestEthPriceWC();
+    console.log("ethPrice", ethPrice);
+    console.log("amunt", amount);
+
+    const totalCostWei = await contract.calculateRequiredPayment(
+      amount,
+      BigInt(ethPrice * 1e8)
+    );
+
+    // Debug: Log contract instance
+
+    // Estimate gas for the transaction using the new syntax
+    console.log("Wei: ", totalCostWei);
+    //600000000000n
+    //012345678901
+    //6000000000000000
+    let gasEstimate;
+    const nonce = getNonceFromUid(user._uid);
+    try {
+      gasEstimate = await contract.revealPurchase.estimateGas(amount, nonce, {
+        value: totalCostWei,
+      });
+      console.log("Gas estimate for revealing:", gasEstimate.toString());
+    } catch (estimateError) {
+      console.error("estimateGas error details:", estimateError.data);
+
+      if (estimateError.data && estimateError.data.startsWith("0x74cba217")) {
+        throw new Error(
+          "Transaction reverted: Insufficient energy available. Check available kWh and try a smaller amount."
+        );
+      }
+      throw new Error(
+        `Failed to estimate gas for revealPurchase: ${estimateError.message}. Check ABI, MetaMask connection, or contract state.`
+      );
+    }
+
+    // Get gas price with fallback
+    const feeData = await contract.runner.provider.getFeeData();
+    let gasPrice = Number(feeData.gasPrice);
+    console.log(
+      "Initial gas price from feeData:",
+      gasPrice?.toString() || "undefined"
+    );
+    if (!gasPrice || gasPrice === 0) {
+      console.warn("Gas price is invalid or 0, using fallback of 10 Gwei");
+      gasPrice = ethers.parseUnits("10", "gwei"); // Fallback gas price
+    }
+
+    const gasCostInWei = BigInt(gasEstimate) * BigInt(gasPrice);
+    console.log("Gas cost in wei:", gasCostInWei.toString());
+    const gasCostInEth = Number(ethers.formatEther(gasCostInWei)).toFixed(6);
+
+    // Energy cost is the totalCostWei (payment amount)
+    const energyCostInEth = Number(ethers.formatEther(totalCostWei)).toFixed(6);
+
+    // Total cost in ETH (calculate in wei first)
+    const totalCostInWei = totalCostWei + gasCostInWei;
+    const totalCostInEth = Number(ethers.formatEther(totalCostInWei)).toFixed(
+      6
+    );
+
+    console.log("Total cost in ETH:", totalCostInEth);
+
+    return {
+      gasCostInEth,
+      energyCostInEth,
+      totalCostInEth,
+      gasEstimate: gasEstimate,
+    };
+  } catch (error) {
     throw new Error(
-      `Failed to estimate gas for revealPurchase: ${estimateError.message}. Check ABI, MetaMask connection, or contract state.`
+      `Error estimating gas for reveal purchase: ${error.message}`
     );
   }
-
-  // Get gas price with fallback
-  const feeData = await contract.runner.provider.getFeeData();
-  let gasPrice = Number(feeData.gasPrice);
-  console.log(
-    "Initial gas price from feeData:",
-    gasPrice?.toString() || "undefined"
-  );
-  if (!gasPrice || gasPrice === 0) {
-    console.warn("Gas price is invalid or 0, using fallback of 10 Gwei");
-    gasPrice = ethers.parseUnits("10", "gwei"); // Fallback gas price
-  }
-
-  const gasCostInWei = BigInt(gasEstimate) * BigInt(gasPrice);
-  console.log("Gas cost in wei:", gasCostInWei.toString());
-  const gasCostInEth = Number(ethers.formatEther(gasCostInWei)).toFixed(6);
-
-  // Energy cost is the totalCostWei (payment amount)
-  const energyCostInEth = Number(ethers.formatEther(totalCostWei)).toFixed(6);
-
-  // Total cost in ETH (calculate in wei first)
-  const totalCostInWei = totalCostWei + gasCostInWei;
-  const totalCostInEth = Number(ethers.formatEther(totalCostInWei)).toFixed(6);
-
-  console.log("Total cost in ETH:", totalCostInEth);
-
-  return {
-    gasCostInEth,
-    energyCostInEth,
-    totalCostInEth,
-    gasEstimate: gasEstimate,
-  };
-  //} catch (error) {
-  //  throw new Error(
-  //   `Error estimating gas for reveal purchase: ${error.message}`
-  // );
-  //}
 };
 
 export const getEthBalance = async (address, networkName = "hardhat") => {
@@ -522,6 +583,8 @@ export const revealPurchase = async (networkName = "hardhat", amount, user) => {
     // Calculate required payment
     await contract.getLatestEthPrice(); // Ensure the contract is ready
     const ethPrice = await contract.getCachedEthPrice();
+    console.log(ethPrice);
+    
     const totalCostWei = await contract.calculateRequiredPayment(
       amount,
       ethPrice / BigInt(10e10)
@@ -669,31 +732,59 @@ export const updateAnswer = async (price, networkName = "hardhat") => {
   await mockPriceContract.updateAnswer(price);
 };
 
-export const convertEthToUsd = async (ethAmount, networkName = "hardhat") => {
-  //try {
-  if (ethAmount <= 0) {
-    throw new Error("ETH amount must be greater than zero");
+// export const convertEthToUsd = async (ethAmount, networkName = "hardhat") => {
+//   //try {
+//   if (ethAmount <= 0) {
+//     throw new Error("ETH amount must be greater than zero");
+//   }
+
+//   // Fetch the latest ETH price in USD (in wei, scaled by 1e8 as per MockV3Aggregator)
+//   const ethPriceInWei = BigInt((await getLatestEthPriceWC(networkName)) * 1e8);
+//   const ethPriceInUsd = Number(ethers.formatUnits(ethPriceInWei, 8)); // Adjust for 1e8 decimals
+
+//   // Convert ETH amount (in ETH) to USD
+//   console.log(ethAmount);
+//   const ethAmountInWei = Number(ethers.parseEther(ethAmount.toString()));
+//   const usdAmount = (
+//     Number(ethers.formatEther(ethAmountInWei)) * ethPriceInUsd
+//   ).toFixed(2);
+
+//   return {
+//     ethAmount: Number(ethAmount).toFixed(6), // ETH with 6 decimals
+//     usdAmount: usdAmount, // USD with 2 decimals
+//     ethPriceInUsd: ethPriceInUsd.toFixed(2), // Price per ETH in USD
+//   };
+//   // } catch (error) {
+//   //   throw new Error(`Error converting ETH to USD: ${error.message}`);
+//   // }
+// };
+
+// Prompt: Correct convertEthToUsd function to return cost in USD, knowing that getLatestEthPriceWC returns 2000$ (dummy usdEth price)
+export const convertEthToUsd = async (amount, networkName = "hardhat") => {
+  try {
+    // Changed: Renamed parameter to 'amount' for clarity and consistency with previous context
+    // Changed: Validate input type and value
+    const ethAmount = Number(amount);
+    if (isNaN(ethAmount) || ethAmount <= 0) {
+      throw new Error("ETH amount must be a valid number greater than zero");
+    }
+
+    // Changed: Use dummy ETH price of $2000 instead of calling getLatestEthPriceWC
+    const ethPriceInUsd = await getLatestEthPriceWC(); // USD per ETH, as number since no scaling needed
+
+    // Changed: Simplified conversion by directly multiplying ethAmount by ethPriceInUsd
+    // Avoided unnecessary parseEther/formatEther to prevent precision issues
+    const usdAmount = (ethAmount * ethPriceInUsd).toFixed(2); // USD with 2 decimals
+
+    return {
+      ethAmount: ethAmount.toFixed(6), // ETH with 6 decimals, as string
+      usdAmount: usdAmount, // USD with 2 decimals, as string
+      ethPriceInUsd: ethPriceInUsd.toFixed(2), // Price per ETH in USD, as string
+    };
+  } catch (error) {
+    // Changed: Reinstated try/catch for proper error handling
+    throw new Error(`Error converting ETH to USD: ${error.message}`);
   }
-
-  // Fetch the latest ETH price in USD (in wei, scaled by 1e8 as per MockV3Aggregator)
-  const ethPriceInWei = BigInt(await getLatestEthPrice(networkName));
-  const ethPriceInUsd = Number(ethers.formatUnits(ethPriceInWei, 8)); // Adjust for 1e8 decimals
-
-  // Convert ETH amount (in ETH) to USD
-  console.log(ethAmount);
-  const ethAmountInWei = Number(ethers.parseEther(ethAmount.toString()));
-  const usdAmount = (
-    Number(ethers.formatEther(ethAmountInWei)) * ethPriceInUsd
-  ).toFixed(2);
-
-  return {
-    ethAmount: Number(ethAmount).toFixed(6), // ETH with 6 decimals
-    usdAmount: usdAmount, // USD with 2 decimals
-    ethPriceInUsd: ethPriceInUsd.toFixed(2), // Price per ETH in USD
-  };
-  // } catch (error) {
-  //   throw new Error(`Error converting ETH to USD: ${error.message}`);
-  // }
 };
 
 export const addEnergy = async (kwh, networkName = "hardhat") => {

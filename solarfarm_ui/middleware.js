@@ -6,18 +6,21 @@ export async function middleware(req) {
   const isAddEnergy = url.pathname === "/admin/add-energy";
   const isUpdatePrice = url.pathname === "/admin/update-price";
   // Check if the contract is paused for /buySolar or /admin/add-energy
-  if (isBuySolar || isAddEnergy|| isUpdatePrice) {
+  if (isBuySolar || isAddEnergy || isUpdatePrice) {
     try {
-      const pauseResponse = await fetch(`${req.nextUrl.origin}/api/check-paused`, {
-        method: "GET",
-      });
+      const pauseResponse = await fetch(
+        `${req.nextUrl.origin}/api/check-paused`,
+        {
+          method: "GET",
+        }
+      );
 
       if (pauseResponse.ok) {
         const data = await pauseResponse.json();
         console.log(data);
         const { isPaused } = data;
         console.log("in the middleware");
-        console.log(isPaused)
+        console.log(isPaused);
         if (isPaused) {
           url.pathname = isBuySolar ? "/maintenance" : "/admin/maintenance";
           return NextResponse.redirect(url);
@@ -35,7 +38,7 @@ export async function middleware(req) {
   }
 
   // Existing authentication and role checks for /admin/* routes
-  if (url.pathname.startsWith("/admin/")) {
+  if (url.pathname === "/admin" || url.pathname.startsWith("/admin/")) {
     const token = req.cookies.get("__session")?.value;
     if (!token) {
       url.pathname = "/unauthorized";
@@ -43,12 +46,15 @@ export async function middleware(req) {
     }
 
     try {
-      const verifyResponse = await fetch(`${req.nextUrl.origin}/api/verify-role`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const verifyResponse = await fetch(
+        `${req.nextUrl.origin}/api/verify-role`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!verifyResponse.ok) {
         url.pathname = "/unauthorized";

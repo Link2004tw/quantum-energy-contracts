@@ -8,13 +8,16 @@ import Card from "@/app/components/Layout/Card";
 import ProgressBar from "./ProgressBar";
 import { saveData } from "@/utils/databaseUtils";
 import EnergyTransaction from "@/models/energyTransaction";
+import { useRouter } from "next/navigation";
+import { onAuthStateChanged } from "firebase/auth";
+import { auth } from "@/config/firebase";
 
 export default function AddEnergyPage() {
   const { user, isLoggedIn } = useAuth();
   const [kwh, setKwh] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [availableEnergy, setAvailableEnergy] = useState(0);
-
+  const router = useRouter();
   const fetchEnergy = async () => {
     setAvailableEnergy(await getAvailableEnergy());
   };
@@ -49,6 +52,7 @@ export default function AddEnergyPage() {
       setKwh("");
       alert("Energy transaction saved successfully!");
     } catch (error) {
+      alert(error);
       console.error("Error adding energy:", error);
       alert("Failed to add energy transaction.");
     } finally {
@@ -56,9 +60,16 @@ export default function AddEnergyPage() {
       setIsSubmitting(false);
     }
   };
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        router.push("/login");
+      }
+    });
+    return () => unsubscribe();
+  }, []);
 
   if (!isLoggedIn || !user) {
-    router.push("/login");
     return null;
   }
 
