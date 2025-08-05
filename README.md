@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-**EnergyContract** is a Solidity smart contract designed to facilitate secure and transparent energy trading between a solar farm and authorized buyers on the Ethereum blockchain. It uses a commit-reveal scheme to ensure fairness and security for energy purchases (in kWh). The accompanying Next.js frontend (`solarfarm_ui`) provides a user-friendly interface, integrated with Firebase for authentication and data storage. Key features include:
+**EnergyContract** is a Solidity smart contract designed to facilitate secure and transparent energy trading between a solar farm and authorized buyers on the Ethereum blockchain. It uses a commit-reveal scheme to ensure fairness and security for energy purchases (in kWh). The accompanying Next.js frontend (`solarfarm_ui`) provides a user-friendly interface, integrated with Firebase for authentication and data storage. A business demo video showcasing the platform is available on YouTube: [Solar Farm Business Demo](https://youtu.be/zD7AweB6VME). Key features include:
 
 - **Energy Management**: Allows the solar farm owner to add energy with a delay (`ADD_ENERGY_DELAY`) via `addEnergy`.
 - **Commit-Reveal Purchases**: Buyers commit (`commitPurchase`) and reveal (`revealPurchase`) within `COMMIT_REVEAL_WINDOW` to prevent front-running.
@@ -23,6 +23,7 @@
 ## Business Mode User Flow
 
 The business mode user flow guides users through the process of logging in, accessing the dashboard, purchasing energy, estimating costs, and viewing orders.
+
 1. **Sign In (Unauthenticated)**  
     Users start at the sign-in page to authenticate using Firebase credentials.  
     ![Sign In Page](./screenshots/buisnessDemo/signin.png)
@@ -58,7 +59,7 @@ The business mode user flow guides users through the process of logging in, acce
 
 ## Technical Mode Web3 Integration
 
-The technical mode user flow demonstrates the Web3 integration process, from connecting a MetaMask wallet to interacting with the `EnergyContract` smart contract for commit and reveal purchases. Below is the sequence with embedded screenshots from `./screenshots/technicalDemo`:
+The technical mode user flow demonstrates the Web3 integration process, from connecting a MetaMask wallet to interacting with the `EnergyContract` smart contract for commit and reveal purchases. A technical demo video showcasing this flow is available on YouTube: [Solar Farm Technical Demo](https://youtu.be/8ACRl62QvUg). Below is the sequence with embedded screenshots from `./screenshots/technicalDemo`:
 
 1. **MetaMask Connection**  
     Users connect their MetaMask wallet to the Hardhat testnet to enable blockchain interactions.  
@@ -239,6 +240,7 @@ The admin dashboard energy management interface allows authorized admin users (e
     ```
     
 - **Check Gas Logs**: Use `console.log` outputs in `utils/contract.js` for gas estimation.
+    
 
 ### Notes
 
@@ -269,6 +271,7 @@ The admin dashboard energy management interface allows authorized admin users (e
     ```
     
 4. **Verify**
+    
     - Check console for addresses.
     - Test at [http://localhost:3000](http://localhost:3000/).
     - Validate gas estimation and Web3 interactions on `/buySolar`.
@@ -304,11 +307,13 @@ The admin dashboard energy management interface allows authorized admin users (e
     ```
     
 3. **Make Changes**
+    
     - Update `contracts/`, `test/`, `scripts/`, `solarfarm_ui/`, `docs/diagrams/`, or `./screenshots/{buisnessDemo,technicalDemo,adminDemo}`.
     - Format with Prettier.
     - Update tests, diagrams, and screenshots if needed.
     - Modify gas estimation in `utils/contract.js` or tests if applicable.
 4. **Test Changes**
+    
     - Run `npx hardhat test`.
     - Test frontend with `npm run dev` in `solarfarm_ui`.
     - Validate diagrams and screenshots.
@@ -320,6 +325,7 @@ The admin dashboard energy management interface allows authorized admin users (e
     ```
     
 6. **Submit a PR**
+    
     - Open against `main`.
     - Describe changes and update diagrams/screenshots.
 
@@ -343,8 +349,10 @@ The admin dashboard energy management interface allows authorized admin users (e
 
 ## Changelog
 
+- **August 05, 2025**: Added YouTube technical demo video link ([https://youtu.be/8ACRl62QvUg](https://youtu.be/8ACRl62QvUg)) to Technical Mode Web3 Integration section in README (10:52 AM EEST).
+- **August 05, 2025**: Added YouTube business demo video link ([https://youtu.be/zD7AweB6VME](https://youtu.be/zD7AweB6VME)) to Project Overview section in README (10:39 AM EEST).
 - **August 03, 2025**: Added Admin Dashboard Energy Management Interface section to README with screenshots (`adminDashboard.png`, `addEnergyPage.png`, `UpdatePricePage.png`, `manageUsersPage.png`, `userDetailsPage.png`, `requestsPage.png`) in `./screenshots/adminDemo` with clear captions (02:21 PM EEST).
 - **August 03, 2025**: Updated Technical Mode Web3 Integration section in README to include specific placeholders for MetaMask commit and reveal screenshots (`commitPurchase.png`, `revealPurchase.png`) in `./screenshots/technicalDemo` with clear captions (02:13 PM EEST).
 - **August 03, 2025**: Embedded screenshots with clear captions in the Business Mode User Flow section of README.md (01:15 PM EEST).
-- **August 03, 2025**: Added business mode user flow with screenshots in `./screenshots/buisnessDemo` (signin, signup, unauuthDashboard, buysolarPage, confirmCommit, confirmReveal, ordersPage) to README (01:10 PM EEST).
+- **August 03, 2025**: Added business mode user flow with screenshots in `./screenshots/buisnessDemo` (signin, signup, unauthDashboard, buysolarPage, confirmCommit, confirmReveal, ordersPage) to README (01:10 PM EEST).
 - **July 30, 2025**: Added gas estimation feature for commit and reveal purchases, including UI integration and error handling (11:55 AM EEST).

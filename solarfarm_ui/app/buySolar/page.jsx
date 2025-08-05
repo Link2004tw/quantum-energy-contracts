@@ -40,6 +40,7 @@ export default function BuySolarPage() {
   const { user } = useAuth();
 
   useEffect(() => {
+    console.log(user);
     const fetchAvailableEnergy = async () => {
       try {
         const energy = await getAvailableEnergy("hardhat");
@@ -113,7 +114,7 @@ export default function BuySolarPage() {
         gasCostInEth,
         "hardhat"
       );
-      console.log(ethAmount, usdAmount);
+      //console.log(ethAmount, usdAmount);
 
       const confirmation = window.confirm(
         `Energy Cost: ${energyCostInEth} ETH\n` +

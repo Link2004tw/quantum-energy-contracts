@@ -1,6 +1,6 @@
 "use client";
 
-import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../config/firebase";
 import User from "../../models/user";
 import React from "react";
@@ -18,7 +18,6 @@ export default function SignUpPage() {
 
   // Function to check and register Ethereum address
   const checkAndRegisterAddress = async (ethAddress) => {
-    const auth = getAuth();
     const token = await auth.currentUser?.getIdToken();
     if (!token) {
       throw new Error("No authenticated user");
@@ -52,40 +51,42 @@ export default function SignUpPage() {
 
       // Check if Ethereum address exists
       const addressCheck = await checkAndRegisterAddress(user.ethereumAddress);
-      console.log(addressCheck);
-      // Save user data to Realtime Database
-      const userData = {
+
+      const userData = new User({
         email: user.email,
         username: user.username,
         birthday: new Date(user.birthday).toDateString(),
         ethereumAddress: user.ethereumAddress,
         createdAt: new Date().toISOString(),
         energy: user.energy,
-      };
-      await saveData(userData, `users/${uid}`);
+        uid: uid
+      });
+      await saveData(userData.toJSON(), `users/${uid}`);
 
       // If address doesn't exist, create and save authorization request
 
       if (!addressCheck.exists) {
+        console.log("hi");
         const authRequest = new AuthorizationRequest(
           uid,
-          user._ethereumAddress,
+          userData._ethereumAddress,
           {
-            name: user._username,
-            email: user._email,
+            name: userData._username,
+            email: userData._email,
             reason: "New user signup requesting access to EnergyContract",
             timestamp: new Date().toISOString(),
           }
         );
 
         await saveData(authRequest.toJSON(), `requests/${uid}`);
+        //await authContext.signIn();
       } else {
         console.log(
           "Ethereum address already registered, skipping authorization request"
         );
       }
 
-      authContext.setSigner(user);
+      authContext.setSigner(userData);
       router.push("/");
     } catch (error) {
       console.error("Error signing up or saving data:", error.message);

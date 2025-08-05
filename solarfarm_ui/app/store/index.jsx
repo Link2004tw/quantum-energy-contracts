@@ -11,6 +11,7 @@ const initialValue = {
   setSigner: () => {},
   isLoggedIn: false,
   signOutHandler: () => {},
+  signUp: () => {},
 };
 const AuthContext = createContext(initialValue);
 
@@ -48,6 +49,27 @@ export default function AuthWrapper({ children }) {
     return () => unsubscribe(); // Cleanup on unmount
   }, []);
 
+  const signUp = async () => {
+    const uid = auth.currentUser.uid;
+    const userData = await getData(`users/${uid}`);
+
+    if (!userData) {
+      alert("User data not found.");
+      return;
+    }
+    const signer = new User({
+      email: userData.email,
+      username: userData.username,
+      birthday: new Date(userData.birthday),
+      ethereumAddress: userData.ethereumAddress,
+      uid: uid,
+      energy: userData.energy,
+    });
+
+    setUser(signer);
+    setIsLoggedIn(true);
+  };
+
   const setSigner = (user) => {
     setUser(user);
     setIsLoggedIn(!!user); // Set isLoggedIn based on user presence
@@ -62,15 +84,13 @@ export default function AuthWrapper({ children }) {
     }
   };
 
-  const setIfOwner = async (address) => {
-    return address === (await getSolarFarm());
-  };
 
   const value = {
     user,
     setSigner,
     isLoggedIn,
     signOutHandler: signOutHandler,
+    signUp
   };
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

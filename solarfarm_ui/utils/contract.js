@@ -477,10 +477,9 @@ export const estimateGasForRevealPurchase = async (
 
     // Estimate gas for the transaction using the new syntax
     console.log("Wei: ", totalCostWei);
-    //600000000000n
-    //012345678901
-    //6000000000000000
+    
     let gasEstimate;
+    alert(user.uid);
     const nonce = getNonceFromUid(user._uid);
     try {
       gasEstimate = await contract.revealPurchase.estimateGas(amount, nonce, {
@@ -802,8 +801,12 @@ export const addEnergy = async (kwh, networkName = "hardhat") => {
     );
     const signer = await contract.runner.provider.getSigner();
     const signerAddress = await signer.getAddress();
+    console.log(signerAddress);
+
 
     const ownerAddress = await getSolarFarm();
+    console.log(ownerAddress);
+
     if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
       alert("Only the contract owner (solar farm) can add energy");
       throw new Error("Only the contract owner can add energy");

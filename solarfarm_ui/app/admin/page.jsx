@@ -2,7 +2,6 @@ import { getAvailableEnergy, getTransactions, getEthBalance, getSolarFarm, isPau
 import TransactionList from './orders/TransactionList';
 import ClientPrimaryButton from './ClientPrimaryButton';
 import EnergyTransactionsList from './energy/EnergyTransactionsList';
-import { getData } from '@/utils/databaseUtils';
 import { Transaction } from '@/models/transaction';
 
 export default async function AdminPage() {
@@ -10,8 +9,7 @@ export default async function AdminPage() {
   let transactions = [];
   let balance = 'N/A';
   let paused = false;
-  let energyTransactions = [];
-
+  
   
   try {
     availableEnergy = (await getAvailableEnergy()).toString(); // Convert BigNumber to string

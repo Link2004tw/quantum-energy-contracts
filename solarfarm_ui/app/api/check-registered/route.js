@@ -6,7 +6,6 @@ const isValidEthereumAddress = (address) => {
 };
 
 export async function POST(req) {
-  console.log("bengarab");
   // Extract the Authorization header
   const authHeader = req.headers.get("authorization");
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -18,8 +17,7 @@ export async function POST(req) {
       }
     );
   }
-  console.log(1);
-
+  
   const idToken = authHeader.split("Bearer ")[1];
 
   // Parse request body

@@ -81,7 +81,7 @@ export default function SigningForm({
           username: formData.username,
           password: formData.password,
           birthday: formData.birthday,
-          ethereumAddress: formData.ethereumAddress,
+          ethereumAddress: formData.ethereumAddress, 
           energy: 0,
         });
         setFormData({

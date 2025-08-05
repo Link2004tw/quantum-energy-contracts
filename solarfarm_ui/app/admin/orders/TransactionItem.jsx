@@ -1,5 +1,5 @@
-import { Transaction } from '@/models/transaction';
-import React from 'react';
+import { Transaction } from "@/models/transaction";
+import React from "react";
 
 export default function TransactionItem({ transaction }) {
   const t = new Transaction({
@@ -8,8 +8,9 @@ export default function TransactionItem({ transaction }) {
     kWh: transaction.kWh,
     pricePerKWhUSD: transaction.pricePerKWhUSD,
     timestamp: transaction.timestamp,
-    error: transaction.error
-  })
+    error: transaction.error,
+    ethPriceUSD: transaction.ethPriceUSD,
+  });
   // Handle error case
   if (t.hasError()) {
     return <li className="text-red-600 italic">{t.error}</li>;

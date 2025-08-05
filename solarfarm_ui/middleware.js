@@ -17,10 +17,9 @@ export async function middleware(req) {
 
       if (pauseResponse.ok) {
         const data = await pauseResponse.json();
-        console.log(data);
+        //console.log(data);
         const { isPaused } = data;
-        console.log("in the middleware");
-        console.log(isPaused);
+        //console.log(isPaused);
         if (isPaused) {
           url.pathname = isBuySolar ? "/maintenance" : "/admin/maintenance";
           return NextResponse.redirect(url);

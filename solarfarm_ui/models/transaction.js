@@ -43,6 +43,7 @@ export class Transaction {
 
   // Get formatted ETH price (assuming 8 decimals from Chainlink)
   getFormattedEthPrice() {
+    console.log(this.ethPriceUSD);
     if (this.hasError()) return "N/A";
     return `$${(Number(this.ethPriceUSD) / 1e18).toFixed(2)}`;
   }
@@ -59,9 +60,9 @@ export class Transaction {
     return `${this.kWh} kWh`;
   }
 
-  toJSON(){
+  toJSON() {
     return {
-      ...this
-    }
+      ...this,
+    };
   }
 }
