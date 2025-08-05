@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import TransactionList from "./orders/TransactionList";
 import ClientPrimaryButton from "./ClientPrimaryButton";
 import EnergyTransactionsList from "./energy/EnergyTransactionsList";
-import { dummyEnergyTransactions, dummyTransactions } from "@/models/dummyData";
+import { dummyEnergyTransactions } from "@/models/dummyData";
 export default function AdminPage() {
   const { user, status, isPaused } = useAuth();
   const router = useRouter();

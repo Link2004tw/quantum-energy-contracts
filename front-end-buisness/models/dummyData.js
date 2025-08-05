@@ -219,7 +219,7 @@ export const dummyTransactions = [
     index: 1,
     buyer: "0x1234567890abcdef1234567890abcdef12345678", // user_001 (Admin)
     kWh: "500",
-    pricePerKWhUSD: "1200", // 12 cents/kWh
+    pricePerKWhUSD: "12", // 12 cents/kWh
     ethPriceUSD: "3200000000000000000000", // $3200 with 18 decimals
     timestamp: Math.floor(new Date("2025-07-29T10:00:00Z").getTime() / 1000), // Unix seconds
     error: null,
@@ -228,7 +228,7 @@ export const dummyTransactions = [
     index: 2,
     buyer: "0x7890abcdef1234567890abcdef1234567890abcd", // user_003 (Authenticated)
     kWh: "200",
-    pricePerKWhUSD: "1200", // 12 cents/kWh
+    pricePerKWhUSD: "12", // 12 cents/kWh
     ethPriceUSD: "3300000000000000000000", // $3300 with 18 decimals
     timestamp: Math.floor(new Date("2025-07-29T12:30:00Z").getTime() / 1000), // Unix seconds
     error: null,
@@ -237,7 +237,7 @@ export const dummyTransactions = [
     index: 3,
     buyer: "0xdef1234567890abcdef1234567890abcdef1234", // user_008 (Authenticated Wallet Not Authenticated)
     kWh: "150",
-    pricePerKWhUSD: "1200", // 12 cents/kWh
+    pricePerKWhUSD: "12", // 12 cents/kWh
     ethPriceUSD: "3250000000000000000000", // $3250 with 18 decimals
     timestamp: Math.floor(new Date("2025-07-30T11:10:00Z").getTime() / 1000), // Unix seconds
     error: "Not authorized on contract",
@@ -246,7 +246,7 @@ export const dummyTransactions = [
     index: 4,
     buyer: "0xabcdef1234567890abcdef1234567890abcdef12", // user_002 (Unauthenticated)
     kWh: "300",
-    pricePerKWhUSD: "1200", // 12 cents/kWh
+    pricePerKWhUSD: "12", // 12 cents/kWh
     ethPriceUSD: "3400000000000000000000", // $3400 with 18 decimals
     timestamp: Math.floor(new Date("2025-07-30T14:00:00Z").getTime() / 1000), // Unix seconds
     error: "User not authenticated",
@@ -255,7 +255,7 @@ export const dummyTransactions = [
     index: 5,
     buyer: "0x0abcdef1234567890abcdef1234567890abcdef1", // user_005 (Authenticated)
     kWh: "1000",
-    pricePerKWhUSD: "1200", // 12 cents/kWh
+    pricePerKWhUSD: "12", // 12 cents/kWh
     ethPriceUSD: "3350000000000000000000", // $3350 with 18 decimals
     timestamp: Math.floor(new Date("2025-07-30T15:50:00Z").getTime() / 1000), // Unix seconds
     error: null,
