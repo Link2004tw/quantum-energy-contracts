@@ -3,6 +3,7 @@ import CommittedOrders from "./commitedOrders";
 import EnergyTransaction from "./energyTransaction";
 import AuthorizationRequest from "./request";
 import Transaction from "./transaction";
+import { v4 as uuidv4 } from 'uuid';
 
 // AI Prompt: "Generate 10 dummy user objects for a User class with fields email, username, password, birthday, ethereumAddress, uid, and energy, ensuring valid Ethereum addresses and varied energy values for a Web3 energy trading demo."
 // AI-generated data for user objects, modified to ensure unique Ethereum addresses and role alignment.
@@ -158,7 +159,7 @@ export const dummyOrders = [
 export const dummyEnergyTransactions = [
   new EnergyTransaction({
     energyAmountKwh: 500,
-    transactionId: crypto.randomUUID(),
+    transactionId: uuidv4(),
     timestamp: "2025-07-30T10:05:00Z",
     reqHash:
       "0x1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2",
@@ -167,7 +168,7 @@ export const dummyEnergyTransactions = [
   }),
   new EnergyTransaction({
     energyAmountKwh: 200,
-    transactionId: crypto.randomUUID(),
+    transactionId: uuidv4(),
     timestamp: "2025-07-30T12:35:00Z",
     reqHash:
       "0x2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3",
@@ -176,7 +177,7 @@ export const dummyEnergyTransactions = [
   }),
   new EnergyTransaction({
     energyAmountKwh: 1000,
-    transactionId: crypto.randomUUID(),
+    transactionId: uuidv4(),
     timestamp: "2025-07-30T15:50:00Z",
     reqHash:
       "0x3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4",
@@ -185,7 +186,7 @@ export const dummyEnergyTransactions = [
   }),
   new EnergyTransaction({
     energyAmountKwh: 300,
-    transactionId: crypto.randomUUID(),
+    transactionId: uuidv4(),
     timestamp: "2025-07-30T09:25:00Z",
     reqHash:
       "0x4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5",
@@ -194,7 +195,7 @@ export const dummyEnergyTransactions = [
   }),
   new EnergyTransaction({
     energyAmountKwh: 150,
-    transactionId: crypto.randomUUID(),
+    transactionId: uuidv4(),
     timestamp: "2025-07-30T11:15:00Z",
     reqHash:
       "0x5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6",
@@ -202,7 +203,7 @@ export const dummyEnergyTransactions = [
   }),
   new EnergyTransaction({
     energyAmountKwh: 100,
-    transactionId: crypto.randomUUID(),
+    transactionId: uuidv4(),
     timestamp: "2025-07-30T14:05:00Z",
     reqHash:
       "0x6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7",
