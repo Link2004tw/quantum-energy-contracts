@@ -60,6 +60,7 @@ export default function AddEnergyPage() {
       setIsSubmitting(false);
     }
   };
+  
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (!user) {
@@ -82,7 +83,7 @@ export default function AddEnergyPage() {
       <Card title="add energy">
         <form onSubmit={handleSubmit}>
           <p className="text-primary-700">
-            Available Energy: {availableEnergy}{" "}
+            Available Energy: {availableEnergy}{" "} kwh
           </p>
           <input
             type="number"

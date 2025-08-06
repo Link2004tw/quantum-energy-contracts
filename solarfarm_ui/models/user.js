@@ -1,15 +1,7 @@
 class User {
-  constructor({
-    email,
-    username,
-    birthday,
-    ethereumAddress,
-    uid,
-    energy = 0,
-  }) {
+  constructor({ email, username, ethereumAddress, uid, energy = 0 }) {
     this._email = email || "";
     this._username = username || "";
-    this._birthday = birthday ? new Date(birthday) : null;
     this._ethereumAddress = this._validateEthereumAddress(ethereumAddress)
       ? ethereumAddress
       : null;
@@ -33,10 +25,6 @@ class User {
     return this._username;
   }
 
-  get birthday() {
-    return this._birthday;
-  }
-
   get ethereumAddress() {
     return this._ethereumAddress;
   }
@@ -44,8 +32,8 @@ class User {
   get energy() {
     return this._energy;
   }
-  
-  set energy(amount){
+
+  set energy(amount) {
     this._energy = amount;
   }
 
@@ -58,10 +46,8 @@ class User {
     return {
       email: this._email,
       username: this._username,
-      birthday: this._birthday ? this._birthday.toDateString() : null,
       ethereumAddress: this._ethereumAddress,
       energy: this._energy,
-      
     };
   }
 }

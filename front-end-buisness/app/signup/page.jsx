@@ -57,7 +57,6 @@ export default function SignUpPage() {
         const userData = {
           email: user._email,
           username: user._username,
-          birthday: user._birthday.toDateString(),
           ethereumAddress: user._ethereumAddress,
           createdAt: new Date().toISOString(),
           energy: user._energy,

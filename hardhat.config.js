@@ -14,7 +14,7 @@ module.exports = {
     localhost: {
       url: "http://192.168.1.13:8545",
       chainId: 31337,
-      rpcUrl: "http://192.168.1.13:8545",
+      rpcUrl: "http://192.168.43.170:8545",
       chainName: "Hardhat",
       currency: { name: "ETH", symbol: "ETH", decimals: 18 },
       blockExplorerUrls: [],

@@ -39,7 +39,6 @@ export default function DetailsPage() {
     return () => unsubscribe(); // Cleanup on unmount
   }, []);
 
-
   const toggleAuherization = async () => {
     const address = currUser.ethereumAddress;
     try {
@@ -93,16 +92,6 @@ export default function DetailsPage() {
               </div>
               <div className="flex flex-col">
                 <span className="text-sm font-semibold text-gray-600">
-                  Birthday
-                </span>
-                <span className="text-gray-800">
-                  {currUser.birthday
-                    ? new Date(currUser.birthday).toDateString()
-                    : "N/A"}
-                </span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-sm font-semibold text-gray-600">
                   Ethereum Address
                 </span>
                 <span className="text-gray-800 truncate">
@@ -130,9 +119,7 @@ export default function DetailsPage() {
             </div>
             <div className="justify-self-center">
               <PrimaryButton
-                title={
-                  Authorized ? "Unautherize" : "Autherize"
-                }
+                title={Authorized ? "Unautherize" : "Autherize"}
                 onClick={toggleAuherization}
               />
             </div>

@@ -31,7 +31,6 @@ export default function UsersPage() {
           return new User({
             email: data.email || "",
             username: data.username || "",
-            birthday: data.birthday || null,
             ethereumAddress: data.ethereumAddress || null,
             uid,
             energy: data.energy || 0,

@@ -65,15 +65,14 @@ export default function ProfilePage() {
       const updatedUser = new User({
         email: user.email,
         username: user.username,
-        birthday: user.birthday,
         uid: user.uid,
         energy: user.energy,
         password: user.password,
-        ethereumAddress: address 
+        ethereumAddress: address,
       });
       //console.log("Updated user:", updatedUser);
       await saveData(updatedUser.toJSON(), `/users/${user._uid}`);
-      
+
       alert("Wallet changed successfully");
     } catch (error) {
       console.error("Error connecting to MetaMask:", error);
@@ -102,16 +101,14 @@ export default function ProfilePage() {
         <div className="grid grid-cols-1 gap-4">
           <p>
             <span className="font-medium text-primary-600">Username:</span>{" "}
-            <span className="text-secondary-900">{currUser.username || "N/A"}</span>
+            <span className="text-secondary-900">
+              {currUser.username || "N/A"}
+            </span>
           </p>
           <p>
             <span className="font-medium text-primary-600">Email:</span>{" "}
-            <span className="text-secondary-900">{currUser.email || "N/A"}</span>
-          </p>
-          <p>
-            <span className="font-medium text-primary-600">Birthday:</span>{" "}
             <span className="text-secondary-900">
-              {currUser.birthday ? currUser.birthday.toLocaleDateString() : "N/A"}
+              {currUser.email || "N/A"}
             </span>
           </p>
           <p>

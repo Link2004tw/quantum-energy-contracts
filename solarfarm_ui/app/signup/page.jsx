@@ -55,11 +55,10 @@ export default function SignUpPage() {
       const userData = new User({
         email: user.email,
         username: user.username,
-        birthday: new Date(user.birthday).toDateString(),
         ethereumAddress: user.ethereumAddress,
         createdAt: new Date().toISOString(),
         energy: user.energy,
-        uid: uid
+        uid: uid,
       });
       await saveData(userData.toJSON(), `users/${uid}`);
 

@@ -5,7 +5,6 @@ import { useAuth } from "@/app/store";
 import User from "@/models/user";
 import UnderlineButton from "../UI/UnderlineButton";
 import PrimaryButton from "../UI/PrimaryButton";
-import Card from "./Card";
 import { ethers } from "ethers";
 import Modal from "./Model";
 import { truncateEthereumAddress } from "@/utils/tools";
@@ -26,7 +25,6 @@ export default function SigningForm({
     password: "",
     confirmPassword: "",
     username: "",
-    birthday: "",
     ethereumAddress: "",
   });
 
@@ -37,9 +35,6 @@ export default function SigningForm({
         password: "",
         confirmPassword: "",
         username: user.username || "",
-        birthday: user.birthday
-          ? user.birthday.toISOString().split("T")[0]
-          : "",
         ethereumAddress: user.ethereumAddress || "",
       });
       setIsWalletConnected(!!user.ethereumAddress);
@@ -50,7 +45,6 @@ export default function SigningForm({
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -66,7 +60,6 @@ export default function SigningForm({
           password: "",
           confirmPassword: "",
           username: "",
-          birthday: "",
           ethereumAddress: "",
         });
         alert("Sign-in submitted successfully!");
@@ -81,7 +74,6 @@ export default function SigningForm({
           email: formData.email,
           username: formData.username,
           password: formData.password,
-          birthday: formData.birthday,
           ethereumAddress: formData.ethereumAddress,
           energy: 0,
         });
@@ -91,7 +83,6 @@ export default function SigningForm({
           password: "",
           confirmPassword: "",
           username: "",
-          birthday: "",
           ethereumAddress: "",
         });
         setIsWalletConnected(false);
@@ -111,7 +102,6 @@ export default function SigningForm({
           email: formData.email,
           username: formData.username,
           password: formData.password || user._password,
-          birthday: formData.birthday,
           ethereumAddress: formData.ethereumAddress || user.ethereumAddress,
           energy: user.energy || 0,
         });
@@ -157,13 +147,11 @@ export default function SigningForm({
     !formData.password ||
     (mode === "signUp" &&
       (!formData.username ||
-        !formData.birthday ||
         !isWalletConnected ||
         formData.password !== formData.confirmPassword)) ||
     (mode === "update" &&
       (!formData.email ||
         !formData.username ||
-        !formData.birthday ||
         (formData.password && formData.password !== formData.confirmPassword)));
 
   return (
@@ -233,23 +221,15 @@ export default function SigningForm({
               className="block placeholder-yellow-300::placeholder mt-2 my-4 px-2 py-1 rounded-sm w-full border border-primary-800"
             />
           </label>
-          <label className="block">
-            <span className="text-primary-600 font-medium">Birthday</span>
-            <input
-              type="date"
-              name="birthday"
-              value={formData.birthday}
-              onChange={handleChange}
-              required
-              className="block mt-2 my-4 px-2 py-1 rounded-sm w-full border border-primary-800"
-            />
-          </label>
           {isWalletConnected ? (
             <div className="text-center text-primary-600 my-4">
               Connected Wallet:{" "}
               {truncateEthereumAddress(formData.ethereumAddress)}
               <div className="pt-4">
-                <PrimaryButton title="Change Wallet" onClick={handleConnectWallet} />
+                <PrimaryButton
+                  title="Change Wallet"
+                  onClick={handleConnectWallet}
+                />
               </div>
             </div>
           ) : (

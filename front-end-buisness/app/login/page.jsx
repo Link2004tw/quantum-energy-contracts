@@ -47,7 +47,6 @@ export default function LoginPage() {
       const signer = new User({
         email: foundUser.email,
         username: foundUser.username,
-        birthday: new Date(foundUser.birthday),
         ethereumAddress: foundUser.ethereumAddress,
         uid: foundUser.uid,
         energy: foundUser.energy,
