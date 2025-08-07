@@ -31,7 +31,7 @@ const NETWORK_CONFIG = {
 
 // Initialize contract
 const getContract = async (
-  networkName = "hardhat",
+  networkName = "sepolia",
   address,
   abi,
   useSigner = false
@@ -95,7 +95,7 @@ const getContract = async (
 };
 
 // Check if contract connection is successful
-export const checkContractConnection = async (networkName = "hardhat") => {
+export const checkContractConnection = async (networkName = "sepolia") => {
   try {
     const contract = await getContract(
       networkName,
@@ -145,7 +145,7 @@ export const checkContractConnection = async (networkName = "hardhat") => {
 };
 
 // Call solarFarm()
-export const getSolarFarm = async (networkName = "hardhat") => {
+export const getSolarFarm = async (networkName = "sepolia") => {
   try {
     const contract = await getContract(
       networkName,
@@ -160,7 +160,7 @@ export const getSolarFarm = async (networkName = "hardhat") => {
   }
 };
 
-export const getLatestEthPriceWC = async (networkName = "hardhat") => {
+export const getLatestEthPriceWC = async (networkName = "sepolia") => {
   try {
     // Use signer to call getLatestEthPrice as it updates the cache
     const contract = await getContract(
@@ -176,7 +176,7 @@ export const getLatestEthPriceWC = async (networkName = "hardhat") => {
   }
 };
 // Call getLatestEthPrice()
-export const getLatestEthPrice = async (networkName = "hardhat") => {
+export const getLatestEthPrice = async (networkName = "sepolia") => {
   try {
     // Use signer to call getLatestEthPrice as it updates the cache
     const contract = await getContract(
@@ -204,7 +204,7 @@ export const getLatestEthPrice = async (networkName = "hardhat") => {
   }
 };
 
-export const getCost = async (amount, networkName = "hardhat") => {
+export const getCost = async (amount, networkName = "sepolia") => {
   try {
     const contract = await getContract(
       networkName,
@@ -227,7 +227,7 @@ export const getCost = async (amount, networkName = "hardhat") => {
   }
 };
 
-export const getAvailableEnergy = async (networkName = "hardhat") => {
+export const getAvailableEnergy = async (networkName = "sepolia") => {
   try {
     const contract = await getContract(
       networkName,
@@ -271,7 +271,7 @@ export const getNonceFromUid = (uid) => {
 };
 
 // grok fixed this function
-export const commitPurchase = async (networkName = "hardhat", amount, user) => {
+export const commitPurchase = async (networkName = "sepolia", amount, user) => {
   try {
     if (amount > 1000) {
       throw new Error("Amount cannot be bigger than 1000 kWh");
@@ -291,7 +291,7 @@ export const commitPurchase = async (networkName = "hardhat", amount, user) => {
     // Calculate energy cost using getCost
 
     //const { gasCostInEth, energyCostInEth, totalCostInEth, gasEstimate } =
-    //  estimateGasForCommitPurchase("hardhat", amount, user);
+    //  estimateGasForCommitPurchase("sepolia", amount, user);
     // Inform user of costs
     // console.log("1");
     // console.log(energyCostInEth);
@@ -314,7 +314,7 @@ export const commitPurchase = async (networkName = "hardhat", amount, user) => {
 };
 
 export const estimateGasForCommitPurchase = async (
-  networkName = "hardhat",
+  networkName = "sepolia",
   amount,
   user
 ) => {
@@ -386,7 +386,7 @@ export const estimateGasForCommitPurchase = async (
 };
 
 export const estimateGasForRevealPurchase = async (
-  networkName = "hardhat",
+  networkName = "sepolia",
   amount,
   user
 ) => {
@@ -479,7 +479,7 @@ export const estimateGasForRevealPurchase = async (
   //}
 };
 
-export const getEthBalance = async (address, networkName = "hardhat") => {
+export const getEthBalance = async (address, networkName = "sepolia") => {
   try {
     if (!ethers.isAddress(address)) {
       throw new Error("Invalid Ethereum address");
@@ -496,7 +496,7 @@ export const getEthBalance = async (address, networkName = "hardhat") => {
   }
 };
 
-export const revealPurchase = async (networkName = "hardhat", amount, user) => {
+export const revealPurchase = async (networkName = "sepolia", amount, user) => {
   try {
     if (!amount || amount <= 0 || amount > 1000) {
       throw new Error("Amount must be between 1 and 1000 kWh");
@@ -567,7 +567,7 @@ export const revealPurchase = async (networkName = "hardhat", amount, user) => {
 };
 
 // utils/contract.js
-export const getTransactions = async (networkName = "hardhat") => {
+export const getTransactions = async (networkName = "sepolia") => {
   try {
     const contract = await getContract(
       networkName,
@@ -623,7 +623,7 @@ export const checkIfAuthorized = async (user) => {
     );
   }
   const contract = await getContract(
-    "hardhat",
+    "sepolia",
     CONTRACT_ADDRESS,
     CONTRACT_ABI,
     true
@@ -643,7 +643,7 @@ export const checkIfAuthorized = async (user) => {
 
 export const getMockPrice = async () => {
   const mockPriceContract = await getContract(
-    "hardhat",
+    "sepolia",
     MOCKP_RICE_ADDRESS,
     MOCKPRICE_ABI,
     false
@@ -652,7 +652,7 @@ export const getMockPrice = async () => {
   return (await mockPriceContract.latestRoundData()).answer;
 };
 
-export const updateAnswer = async (price, networkName = "hardhat") => {
+export const updateAnswer = async (price, networkName = "sepolia") => {
   const mockPriceContract = await getContract(
     networkName,
     MOCKP_RICE_ADDRESS,
@@ -669,7 +669,7 @@ export const updateAnswer = async (price, networkName = "hardhat") => {
   await mockPriceContract.updateAnswer(price);
 };
 
-export const convertEthToUsd = async (ethAmount, networkName = "hardhat") => {
+export const convertEthToUsd = async (ethAmount, networkName = "sepolia") => {
   //try {
   if (ethAmount <= 0) {
     throw new Error("ETH amount must be greater than zero");
@@ -696,7 +696,7 @@ export const convertEthToUsd = async (ethAmount, networkName = "hardhat") => {
   // }
 };
 
-export const addEnergy = async (kwh, networkName = "hardhat") => {
+export const addEnergy = async (kwh, networkName = "sepolia") => {
   try {
     if (!kwh || kwh <= 0 || kwh > 1000) {
       alert("kWh must be between 1 and 1000");
@@ -760,7 +760,7 @@ export const addEnergy = async (kwh, networkName = "hardhat") => {
 };
 
 // pause function
-export const pauseContract = async (networkName = "hardhat") => {
+export const pauseContract = async (networkName = "sepolia") => {
   try {
     const contract = await getContract(
       networkName,
@@ -801,7 +801,7 @@ export const pauseContract = async (networkName = "hardhat") => {
   }
 };
 
-export const unpauseContract = async (networkName = "hardhat") => {
+export const unpauseContract = async (networkName = "sepolia") => {
   try {
     const contract = await getContract(
       networkName,
@@ -844,7 +844,7 @@ export const unpauseContract = async (networkName = "hardhat") => {
 
 export const isPaused = async () => {
   const contract = await getContract(
-    "hardhat",
+    "sepolia",
     CONTRACT_ADDRESS,
     CONTRACT_ABI,
     false
@@ -853,7 +853,7 @@ export const isPaused = async () => {
   return await contract.paused();
 };
 
-export const authorizeParty = async (address, networkName = "hardhat") => {
+export const authorizeParty = async (address, networkName = "sepolia") => {
   try {
     if (!ethers.isAddress(address)) {
       alert("Invalid Ethereum address");
@@ -877,7 +877,7 @@ export const authorizeParty = async (address, networkName = "hardhat") => {
   }
 };
 
-export const unauthorizeParty = async (address, networkName = "hardhat") => {
+export const unauthorizeParty = async (address, networkName = "sepolia") => {
   try {
     if (!ethers.isAddress(address)) {
       alert("Invalid Ethereum address");

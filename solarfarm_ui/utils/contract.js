@@ -1,1880 +1,879 @@
-// import { ethers } from "ethers";
-// import CONTRACT_ABI from "../config/SolarFarmABI.json";
-// import MOCKPRICE_ABI from "../config/MockPriceABI.json";
-// import { Transaction } from "@/models/transaction";
-
-// // Contract ABI and address (replace with your deployed address)
-// const CONTRACT_ADDRESS = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512"; // Update with your deployed EnergyContract address
-// const MOCKP_RICE_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
-
-// //0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-// // Network configuration
-// const NETWORK_CONFIG = {
-//   hardhat: {
-//     chainId: "31337",
-//     rpcUrl: "http://192.168.43.170:8545",
-//     chainName: "Hardhat",
-//     currency: { name: "ETH", symbol: "ETH", decimals: 18 },
-//     blockExplorerUrls: [],
-//   },
-//   sepolia: {
-//     chainId: "11155111",
-//     rpcUrl:
-//       process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ||
-//       "https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_ACCESS_KEY",
-//     chainName: "Sepolia",
-//     currency: { name: "ETH", symbol: "ETH", decimals: 18 },
-//     blockExplorerUrls: ["https://sepolia.etherscan.io"],
-//   },
-// };
-
-// // Initialize contract
-// const getContract = async (
-//   networkName = "hardhat",
-//   address,
-//   abi,
-//   useSigner = false
-// ) => {
-//   try {
-//     let provider;
-//     let signer;
-
-//     if (useSigner && typeof window.ethereum !== "undefined") {
-//       // MetaMask provider
-//       provider = new ethers.BrowserProvider(window.ethereum);
-
-//       await window.ethereum.request({ method: "eth_requestAccounts" });
-//       signer = await provider.getSigner();
-
-//       // Switch to the correct network
-//       const network = await provider.getNetwork();
-//       const targetConfig = NETWORK_CONFIG[networkName];
-//       //console.log("Current network:", NETWORK_CONFIG);
-//       if (network.chainId.toString() !== targetConfig.chainId) {
-//         try {
-//           await window.ethereum.request({
-//             method: "wallet_switchEthereumChain",
-//             params: [
-//               {
-//                 chainId: `0x${parseInt(targetConfig.chainId, 10).toString(16)}`,
-//               },
-//             ],
-//           });
-//         } catch (switchError) {
-//           if (switchError.code === 4902) {
-//             await window.ethereum.request({
-//               method: "wallet_addEthereumChain",
-//               params: [
-//                 {
-//                   chainId: `0x${parseInt(targetConfig.chainId, 10).toString(
-//                     16
-//                   )}`,
-//                   chainName: targetConfig.chainName,
-//                   rpcUrls: [targetConfig.rpcUrl],
-//                   nativeCurrency: targetConfig.currency,
-//                   blockExplorerUrls: targetConfig.blockExplorerUrls,
-//                 },
-//               ],
-//             });
-//           } else {
-//             throw switchError;
-//           }
-//         }
-//       }
-//       return new ethers.Contract(address, abi, signer);
-//     } else {
-//       // RPC provider for read-only
-//       const targetConfig = NETWORK_CONFIG[networkName];
-//       provider = new ethers.JsonRpcProvider(targetConfig.rpcUrl);
-//       return new ethers.Contract(address, abi, provider);
-//     }
-//   } catch (error) {
-//     throw new Error(`Failed to initialize contract: ${error.message}`);
-//   }
-// };
-
-// // Check if contract connection is successful
-// export const checkContractConnection = async (networkName = "hardhat") => {
-//   try {
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       false
-//     );
-//     const provider = contract.runner.provider;
-
-//     // Check provider connection
-//     const network = await provider.getNetwork();
-//     const targetConfig = NETWORK_CONFIG[networkName];
-//     if (network.chainId.toString() !== targetConfig.chainId) {
-//       throw new Error(
-//         `Wrong network: expected chainId ${targetConfig.chainId}, got ${network.chainId}`
-//       );
-//     }
-
-//     // Check if contract is deployed (has code at address)
-//     const code = await provider.getCode(CONTRACT_ADDRESS);
-//     if (code === "0x") {
-//       throw new Error(`No contract deployed at address ${CONTRACT_ADDRESS}`);
-//     }
-
-//     // Test a simple read call to solarFarm()
-//     const solarFarmAddress = await contract.solarFarm();
-//     if (!ethers.isAddress(solarFarmAddress)) {
-//       throw new Error(
-//         `Invalid solarFarm address returned: ${solarFarmAddress}`
-//       );
-//     }
-
-//     return {
-//       isConnected: true,
-//       message: `Successfully connected to EnergyContract at ${CONTRACT_ADDRESS} on ${targetConfig.chainName}`,
-//       chainId: network.chainId.toString(),
-//       solarFarmAddress,
-//     };
-//   } catch (error) {
-//     return {
-//       isConnected: false,
-//       message: `Connection failed: ${error.message}`,
-//       chainId: null,
-//       solarFarmAddress: null,
-//     };
-//   }
-// };
-
-// // Call solarFarm()
-// export const getSolarFarm = async (networkName = "hardhat") => {
-//   try {
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       false
-//     );
-//     const solarFarmAddress = await contract.solarFarm();
-//     return solarFarmAddress;
-//   } catch (error) {
-//     throw new Error(`Error calling solarFarm: ${error.message}`);
-//   }
-// };
-
-// export const getLatestEthPriceWC = async (networkName = "hardhat") => {
-//   try {
-//     // Use signer to call getLatestEthPrice as it updates the cache
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       false
-//     );
-
-//     const price = await contract.getLatestEthPriceWithoutCaching();
-//     //console.log("Price: ",price)
-//     return Number(price) / 1e18;
-//   } catch (error) {
-//     // Changed: Log full error and error.data for debugging
-//     console.error("Error fetching ETH price:", error);
-//     console.error("Error data:", error.data);
-
-//     // Changed: Try decoding error with CONTRACT_ABI
-//     let errorMessage =
-//       "Failed to fetch ETH price. Please check your connection and try again.";
-//     try {
-//       const iface = new ethers.Interface(CONTRACT_ABI);
-//       // Handle nested error.data (common in ethers.js for certain providers)
-//       const errorData = error.data || (error.error && error.error.data);
-//       if (errorData) {
-//         const decodedError = iface.parseError(errorData);
-//         if (decodedError && decodedError.name === "PriceFeedStale") {
-//           const [timestamp, maxAge] = decodedError.args;
-//           // Changed: Specific alert for PriceFeedStale
-//           errorMessage = `Price feed is stale (timestamp: ${timestamp}, max age: ${maxAge} seconds). Please try again later.`;
-//           alert(errorMessage);
-//           throw new Error(
-//             `PriceFeedStale: Timestamp ${timestamp} exceeds max age ${maxAge}`
-//           );
-//         }
-//       }
-//     } catch (decodeError) {
-//       // Changed: Handle decoding failure and check error message for PriceFeedStale
-//       console.error("Could not decode error:", decodeError);
-//       if (error.message.includes("PriceFeedStale")) {
-//         // Extract timestamp and maxAge from error message (fallback)
-//         const match = error.message.match(
-//           /Timestamp (\d+) exceeds max age (\d+)/
-//         );
-//         if (match) {
-//           const [_, timestamp, maxAge] = match;
-//           errorMessage = `Price feed is stale (timestamp: ${timestamp}, max age: ${maxAge} seconds). Please try again later.`;
-//           alert(errorMessage);
-//           throw new Error(
-//             `PriceFeedStale: Timestamp ${timestamp} exceeds max age ${maxAge}`
-//           );
-//         }
-//       }
-//     }
-
-//     // Changed: Generic alert for other errors
-//     alert(errorMessage);
-//     throw new Error(`Error fetching ETH price: ${error.message}`);
-//   }
-// };
-// // Call getLatestEthPrice()
-// export const getLatestEthPrice = async (networkName = "hardhat") => {
-//   try {
-//     // Use signer to call getLatestEthPrice as it updates the cache
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       true
-//     );
-//     //const tx =
-//     await contract.getLatestEthPrice();
-//     //await tx.wait(); // Wait for transaction to mine and update cache
-//     const price = await contract.getCachedEthPrice();
-//     return price.toString(); // Return as string to avoid BigInt issues
-//   } catch (error) {
-//     console.error("Error calling getLatestEthPrice:", error);
-//     if (error.data) {
-//       try {
-//         const iface = new ethers.Interface(CONTRACT_ABI);
-//         const decodedError = iface.parseError(error.data);
-//       } catch (decodeError) {
-//         console.error("Could not decode revert reason:", decodeError);
-//       }
-//     }
-//     throw new Error(`Error calling getLatestEthPrice: ${error.message}`);
-//   }
-// };
-
-// // Prompt: Fix getCost to return cost in ETH for energy amount (kWh) at $0.12/kWh, addressing incorrect output of 0.0000006 ETH for 100 kWh, knowing 1 ETH = 2000 USD
-// export const getCost = async (amount, networkName = "hardhat") => {
-//   try {
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       false
-//     );
-//     // Validate amount as energy (kWh)
-//     const energy = Number(amount);
-//     if (isNaN(energy) || energy <= 0) {
-//       throw new Error("Energy amount must be a valid number greater than zero");
-//     }
-
-//     // Get ETH price and adjust for contract's cents-based scaling
-//     const ethPriceInUsd = await getLatestEthPriceWC(); // Returns 2000 (USD/ETH)
-//     console.log(`ETH price in USD: ${ethPriceInUsd}`); // Log for debugging
-//     const ethPrice = BigInt(Math.round(ethPriceInUsd)); // Convert to BigInt (2000)
-//     // Changed: Scale by 100 to convert USD to cents, then by 1e8 (2000 * 100 * 1e8 = 2e13)
-//     const ethPriceScaled = ethPrice; // USD to cents
-
-//     // Pass energy amount (kWh) to contract
-//     const priceInWei = await contract.calculateRequiredPayment(
-//       energy, // Pass kWh directly
-//       ethPriceScaled * BigInt(1e8) // Scale to cents * 1e8 (2e13 * 1e8 = 2e21)
-//     );
-
-//     // Convert contract output to ETH and format to 6 decimals
-//     const priceInEth = ethers.formatUnits(priceInWei, 18); // Convert wei to ETH
-//     console.log(`Contract output in ETH: ${priceInEth}`); // Log for debugging
-//     return Number(priceInEth).toFixed(6); // Return ETH as string with 6 decimals
-//   } catch (error) {
-//     throw new Error(`Error calculating cost: ${error.message}`);
-//   }
-// };
-
-// export const getAvailableEnergy = async (networkName = "hardhat") => {
-//   try {
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       false
-//     );
-//     console.log("Fetching available energy...");
-//     const energy = await contract.availableKWh();
-//     return energy;
-//   } catch (error) {
-//     throw new Error(`Error fetching available energy: ${error.message}`);
-//   }
-// };
-
-// const getHashedCommitment = (kWh, nonce, sender) => {
-//   return ethers.keccak256(
-//     ethers.solidityPacked(
-//       ["uint256", "uint256", "address"],
-//       [kWh, nonce, sender]
-//     )
-//   );
-// };
-
-// // Derive a numeric nonce from Firebase UID
-// export const getNonceFromUid = (uid) => {
-//   if (typeof uid !== "string" || uid.length === 0) {
-//     throw new Error("Invalid Firebase UID");
-//   }
-
-//   // Hash the UID to a bytes32 value
-//   const hash = ethers.keccak256(ethers.toUtf8Bytes(uid));
-
-//   // Convert first 4 bytes of hash to a number
-//   const hashNumber = Number(BigInt(hash.slice(0, 10)) & BigInt(0xffffffff));
-
-//   // Scale to 5-digit range (10000 to 99999)
-//   const nonce = 10000 + (hashNumber % 90000);
-
-//   return nonce.toString(); // Return as string
-// };
-
-// // grok fixed this function
-// export const commitPurchase = async (networkName = "hardhat", amount, user) => {
-//   try {
-//     if (amount > 1000) {
-//       throw new Error("Amount cannot be bigger than 1000 kWh");
-//     }
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       true // Use signer for transactions
-//     );
-
-//     // Generate nonce from UID
-//     const nonce = getNonceFromUid(user._uid);
-
-//     // Calculate hashed commitment
-//     const hash = getHashedCommitment(amount, nonce, user._ethereumAddress);
-//     // Calculate energy cost using getCost
-
-//     // Execute transaction with estimated gas
-//     const tx = await contract.commitPurchase(hash);
-//     await tx.wait(); // Wait for transaction confirmation
-//     return hash;
-//   } catch (error) {
-//     throw new Error(`Error committing purchase: ${error.message}`);
-//   }
-// };
-
-// export const estimateGasForCommitPurchase = async (
-//   networkName = "hardhat",
-//   amount,
-//   user
-// ) => {
-//   try {
-//     if (amount > 1000) {
-//       throw new Error("Amount cannot be bigger than 1000 kWh");
-//     }
-//     console.log("getting contract with signer");
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       true // Use signer for estimation
-//     );
-//     // Generate nonce from UID
-//     const nonce = getNonceFromUid(user._uid);
-
-//     // Calculate hashed commitment
-//     const hash = getHashedCommitment(amount, nonce, user._ethereumAddress);
-
-//     // Estimate gas for the transaction using the new syntax
-//     let gasEstimate;
-//     try {
-//       console.log("getting gasEstimate 1");
-//       gasEstimate = await contract.commitPurchase.estimateGas(hash);
-//       console.log("Reveal Gas estimate:", gasEstimate.toString());
-//     } catch (estimateError) {
-//       console.error("estimateGas error details:", estimateError);
-//       throw new Error(
-//         `Failed to estimate gas for commitPurchase: ${estimateError.message}. Check ABI and MetaMask connection.`
-//       );
-//     }
-
-//     // Get gas price with fallback
-//     console.log("getting gasEstimate 2");
-
-//     const gasPrice = (await contract.runner.provider.getFeeData()).gasPrice;
-//     console.log(
-//       "Initial gas price from feeData:",
-//       gasPrice?.toString() || "undefined"
-//     );
-
-//     // Validate and calculate gas cost
-
-//     const gasCostInWei = BigInt(gasEstimate) * BigInt(gasPrice);
-//     console.log("Gas cost in wei:", gasCostInWei.toString());
-//     const gasCostInEth = Number(ethers.formatEther(gasCostInWei)).toFixed(6);
-
-//     // Calculate energy cost using getCost
-//     const energyCostInEth = await getCost(amount, networkName);
-
-//     // Total cost in ETH (calculate in wei first)
-//     const energyCostInWei = ethers.parseEther(energyCostInEth);
-//     const totalCostInWei =
-//       BigInt(Number(energyCostInWei)) + BigInt(Number(gasCostInWei));
-//     const totalCostInEth = Number(ethers.formatEther(totalCostInWei)).toFixed(
-//       6
-//     );
-
-//     console.log("Total cost in ETH:", totalCostInEth);
-
-//     return {
-//       gasCostInEth,
-//       energyCostInEth,
-//       totalCostInEth,
-//       gasEstimate: gasEstimate.toString(),
-//     };
-//   } catch (error) {
-//     throw new Error(
-//       `Error estimating gas for commit purchase: ${error.message}`
-//     );
-//   }
-// };
-
-// export const estimateGasForRevealPurchase = async (
-//   networkName = "hardhat",
-//   amount,
-//   user
-// ) => {
-//   try {
-//     if (!amount || amount <= 0 || amount > 1000) {
-//       throw new Error("Amount must be between 1 and 1000 kWh");
-//     }
-//     if (!user || !user._ethereumAddress) {
-//       throw new Error("User Ethereum address is required");
-//     }
-//     console.log("getting gasEstimate 3");
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       true // Use signer for estimation
-//     );
-//     const signer = await contract.runner.provider.getSigner();
-//     const signerAddress = await signer.getAddress();
-
-//     if (signerAddress.toLowerCase() !== user._ethereumAddress.toLowerCase()) {
-//       throw new Error(
-//         "Signer address does not match provided Ethereum address"
-//       );
-//     }
-
-//     // Calculate required payment
-//     //await contract.getLatestEthPrice(); // Ensure the contract is ready
-//     const ethPrice = await getLatestEthPriceWC();
-//     console.log("ethPrice", ethPrice);
-//     console.log("amunt", amount);
-
-//     const totalCostWei = await contract.calculateRequiredPayment(
-//       amount,
-//       BigInt(ethPrice * 1e8)
-//     );
-
-//     // Debug: Log contract instance
-
-//     // Estimate gas for the transaction using the new syntax
-//     console.log("Wei: ", totalCostWei);
-
-//     let gasEstimate;
-//     alert(user.uid);
-//     const nonce = getNonceFromUid(user._uid);
-//     try {
-//       gasEstimate = await contract.revealPurchase.estimateGas(amount, nonce, {
-//         value: totalCostWei,
-//       });
-//       console.log("Gas estimate for revealing:", gasEstimate.toString());
-//     } catch (estimateError) {
-//       console.error("estimateGas error details:", estimateError.data);
-
-//       if (estimateError.data && estimateError.data.startsWith("0x74cba217")) {
-//         throw new Error(
-//           "Transaction reverted: Insufficient energy available. Check available kWh and try a smaller amount."
-//         );
-//       }
-//       throw new Error(
-//         `Failed to estimate gas for revealPurchase: ${estimateError.message}. Check ABI, MetaMask connection, or contract state.`
-//       );
-//     }
-
-//     // Get gas price with fallback
-//     const feeData = await contract.runner.provider.getFeeData();
-//     let gasPrice = Number(feeData.gasPrice);
-//     console.log(
-//       "Initial gas price from feeData:",
-//       gasPrice?.toString() || "undefined"
-//     );
-//     if (!gasPrice || gasPrice === 0) {
-//       console.warn("Gas price is invalid or 0, using fallback of 10 Gwei");
-//       gasPrice = ethers.parseUnits("10", "gwei"); // Fallback gas price
-//     }
-
-//     const gasCostInWei = BigInt(gasEstimate) * BigInt(gasPrice);
-//     console.log("Gas cost in wei:", gasCostInWei.toString());
-//     const gasCostInEth = Number(ethers.formatEther(gasCostInWei)).toFixed(6);
-
-//     // Energy cost is the totalCostWei (payment amount)
-//     const energyCostInEth = Number(ethers.formatEther(totalCostWei)).toFixed(6);
-
-//     // Total cost in ETH (calculate in wei first)
-//     const totalCostInWei = totalCostWei + gasCostInWei;
-//     const totalCostInEth = Number(ethers.formatEther(totalCostInWei)).toFixed(
-//       6
-//     );
-
-//     console.log("Total cost in ETH:", totalCostInEth);
-
-//     return {
-//       gasCostInEth,
-//       energyCostInEth,
-//       totalCostInEth,
-//       gasEstimate: gasEstimate,
-//     };
-//   } catch (error) {
-//     throw new Error(
-//       `Error estimating gas for reveal purchase: ${error.message}`
-//     );
-//   }
-// };
-
-// export const getEthBalance = async (address, networkName = "hardhat") => {
-//   try {
-//     if (!ethers.isAddress(address)) {
-//       throw new Error("Invalid Ethereum address");
-//     }
-//     const targetConfig = NETWORK_CONFIG[networkName];
-//     const provider = new ethers.JsonRpcProvider(targetConfig.rpcUrl);
-//     const balanceWei = await provider.getBalance(address);
-//     const balanceEth = ethers.formatEther(balanceWei);
-//     //console.log(`ETH Balance for ${address}: ${balanceEth} ETH`);
-//     return balanceEth;
-//   } catch (error) {
-//     console.error(`Error fetching ETH balance for ${address}:`, error.message);
-//     throw new Error(`Failed to fetch ETH balance: ${error.message}`);
-//   }
-// };
-
-// export const revealPurchase = async (networkName = "hardhat", amount, user) => {
-//   try {
-//     if (!amount || amount <= 0 || amount > 1000) {
-//       throw new Error("Amount must be between 1 and 1000 kWh");
-//     }
-//     if (!user || !user._ethereumAddress) {
-//       throw new Error("User Ethereum address is required");
-//     }
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       true // Use signer
-//     );
-//     const signer = await contract.runner.provider.getSigner();
-//     const signerAddress = await signer.getAddress();
-
-//     if (signerAddress.toLowerCase() !== user._ethereumAddress.toLowerCase()) {
-//       throw new Error(
-//         "Signer address does not match provided Ethereum address"
-//       );
-//     }
-
-//     // Calculate required payment
-//     await contract.getLatestEthPrice(); // Ensure the contract is ready
-//     const ethPrice = await contract.getCachedEthPrice();
-//     console.log(ethPrice);
-
-//     const totalCostWei = await contract.calculateRequiredPayment(
-//       amount,
-//       ethPrice / BigInt(10e10)
-//     );
-
-//     // Estimate gas for the transaction
-//     const gasEstimate = await contract.revealPurchase.estimateGas(
-//       amount,
-//       getNonceFromUid(user._uid),
-//       { value: totalCostWei }
-//     );
-//     const gasPrice = (await contract.runner.provider.getFeeData()).gasPrice;
-//     const gasCostInWei = BigInt(gasEstimate) * BigInt(gasPrice);
-//     const gasCostInEth = Number(ethers.formatEther(gasCostInWei)).toFixed(6);
-
-//     // Convert totalCostWei to ETH for display
-//     const energyCostInEth = Number(ethers.formatEther(totalCostWei)).toFixed(6);
-
-//     // Total cost in ETH
-//     const totalCostInWei = totalCostWei + gasCostInWei;
-//     const totalCostInEth = Number(ethers.formatEther(totalCostInWei)).toFixed(
-//       6
-//     );
-
-//     // Inform user of costs
-
-//     //if (!confirmation) throw new Error("Transaction cancelled by user");
-
-//     // Call revealPurchase
-//     const revealTx = await contract.revealPurchase(
-//       amount,
-//       getNonceFromUid(user._uid),
-//       { value: totalCostWei, gasLimit: gasEstimate }
-//     );
-//     const receipt = await revealTx.wait();
-//     return receipt.hash;
-//   } catch (error) {
-//     console.error("Error in revealPurchase:", error);
-//     throw new Error(
-//       error.reason || error.message || "Failed to reveal purchase"
-//     );
-//   }
-// };
-
-// // utils/contract.js
-// export const getTransactions = async (networkName = "hardhat") => {
-//   try {
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       false // Read-only, no signer needed
-//     );
-
-//     // Get the total number of transactions
-//     const transactionCount = await contract.transactionCount();
-//     const transactionCountNum = Number(transactionCount); // Convert BigNumber to number
-
-//     // Array to store transactions
-//     const transactions = [];
-
-//     // Loop through each transaction index
-//     for (let i = 0; i < transactionCountNum; i++) {
-//       try {
-//         const tx = await contract.transactions(i);
-//         transactions.push(
-//           new Transaction({
-//             index: i,
-//             buyer: tx.buyer,
-//             kWh: tx.kWh.toString(),
-//             pricePerKWhUSD: tx.pricePerKWhUSD.toString(),
-//             ethPriceUSD: tx.ethPriceUSD.toString(),
-//             timestamp: Number(tx.timestamp),
-//           })
-//         );
-//       } catch (error) {
-//         console.error(`Error fetching transaction at index ${i}:`, error);
-//         transactions.push(
-//           new Transaction({
-//             index: i,
-//             error: `Failed to fetch transaction ${i}`,
-//           })
-//         );
-//       }
-//     }
-
-//     return transactions;
-//   } catch (error) {
-//     console.error("Error fetching transactions:", error);
-//     throw new Error(`Failed to fetch transactions: ${error.message}`);
-//   }
-// };
-
-// export const checkIfAuthorized = async (user) => {
-//   console.log(user.ethereumAddress, "hi");
-//   if (!user || !user.ethereumAddress) {
-//     throw new Error(
-//       "User is not authenticated or does not have an Ethereum address."
-//     );
-//   }
-//   const contract = await getContract(
-//     "hardhat",
-//     CONTRACT_ADDRESS,
-//     CONTRACT_ABI,
-//     true
-//   );
-//   try {
-//     console.log(user.ethereumAddress ? "mawgoud" : "mesh mawgoud");
-//     const answer = await contract.checkAuthState(user.ethereumAddress);
-//     console.log("answer is");
-//     console.log(answer);
-//     return answer;
-//   } catch (error) {
-//     console.log(error);
-//   }
-// };
-
-// // this is for testing purposes only. for admin use
-
-// export const getMockPrice = async () => {
-//   const mockPriceContract = await getContract(
-//     "hardhat",
-//     MOCKP_RICE_ADDRESS,
-//     MOCKPRICE_ABI,
-//     false
-//   );
-
-//   return (await mockPriceContract.latestRoundData()).answer;
-// };
-
-// export const updateAnswer = async (price, networkName = "hardhat") => {
-//   const mockPriceContract = await getContract(
-//     networkName,
-//     MOCKP_RICE_ADDRESS,
-//     MOCKPRICE_ABI,
-//     true
-//   );
-//   const solarFarmContract = await getContract(
-//     networkName,
-//     CONTRACT_ADDRESS,
-//     CONTRACT_ABI,
-//     false
-//   );
-//   //const ethprice = await solarFarmContract.getCachedEthPrice();
-//   await mockPriceContract.updateAnswer(price);
-// };
-
-// // export const convertEthToUsd = async (ethAmount, networkName = "hardhat") => {
-// //   //try {
-// //   if (ethAmount <= 0) {
-// //     throw new Error("ETH amount must be greater than zero");
-// //   }
-
-// //   // Fetch the latest ETH price in USD (in wei, scaled by 1e8 as per MockV3Aggregator)
-// //   const ethPriceInWei = BigInt((await getLatestEthPriceWC(networkName)) * 1e8);
-// //   const ethPriceInUsd = Number(ethers.formatUnits(ethPriceInWei, 8)); // Adjust for 1e8 decimals
-
-// //   // Convert ETH amount (in ETH) to USD
-// //   console.log(ethAmount);
-// //   const ethAmountInWei = Number(ethers.parseEther(ethAmount.toString()));
-// //   const usdAmount = (
-// //     Number(ethers.formatEther(ethAmountInWei)) * ethPriceInUsd
-// //   ).toFixed(2);
-
-// //   return {
-// //     ethAmount: Number(ethAmount).toFixed(6), // ETH with 6 decimals
-// //     usdAmount: usdAmount, // USD with 2 decimals
-// //     ethPriceInUsd: ethPriceInUsd.toFixed(2), // Price per ETH in USD
-// //   };
-// //   // } catch (error) {
-// //   //   throw new Error(`Error converting ETH to USD: ${error.message}`);
-// //   // }
-// // };
-
-// // Prompt: Correct convertEthToUsd function to return cost in USD, knowing that getLatestEthPriceWC returns 2000$ (dummy usdEth price)
-// export const convertEthToUsd = async (amount, networkName = "hardhat") => {
-//   try {
-//     // Changed: Renamed parameter to 'amount' for clarity and consistency with previous context
-//     // Changed: Validate input type and value
-//     const ethAmount = Number(amount);
-//     if (isNaN(ethAmount) || ethAmount <= 0) {
-//       throw new Error("ETH amount must be a valid number greater than zero");
-//     }
-
-//     // Changed: Use dummy ETH price of $2000 instead of calling getLatestEthPriceWC
-//     const ethPriceInUsd = await getLatestEthPriceWC(); // USD per ETH, as number since no scaling needed
-
-//     // Changed: Simplified conversion by directly multiplying ethAmount by ethPriceInUsd
-//     // Avoided unnecessary parseEther/formatEther to prevent precision issues
-//     const usdAmount = (ethAmount * ethPriceInUsd).toFixed(2); // USD with 2 decimals
-
-//     return {
-//       ethAmount: ethAmount.toFixed(6), // ETH with 6 decimals, as string
-//       usdAmount: usdAmount, // USD with 2 decimals, as string
-//       ethPriceInUsd: ethPriceInUsd.toFixed(2), // Price per ETH in USD, as string
-//     };
-//   } catch (error) {
-//     // Changed: Reinstated try/catch for proper error handling
-//     throw new Error(`Error converting ETH to USD: ${error.message}`);
-//   }
-// };
-
-// export const addEnergy = async (kwh, networkName = "hardhat") => {
-//   try {
-//     if (!kwh || kwh <= 0 || kwh > 1000) {
-//       alert("kWh must be between 1 and 1000");
-//       throw new Error("kWh must be between 1 and 1000");
-//     }
-
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       true
-//     );
-//     const signer = await contract.runner.provider.getSigner();
-//     const signerAddress = await signer.getAddress();
-//     console.log(signerAddress);
-
-//     const ownerAddress = await getSolarFarm();
-//     console.log(ownerAddress);
-
-//     if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
-//       alert("Only the contract owner (solar farm) can add energy");
-//       throw new Error("Only the contract owner can add energy");
-//     }
-
-//     // Step 1: Request to add energy
-//     const requestTx = await contract.requestAddEnergy(kwh);
-//     await requestTx.wait();
-
-//     // Step 2: Wait for ADD_ENERGY_DELAY (2 minutes = 120,000 ms)
-//     const ADD_ENERGY_DELAY = 2 * 60 * 1000; // 2 minutes in milliseconds
-//     alert(
-//       `Please wait 2 minutes before confirming the energy addition. Transaction hash: ${requestTx.hash}`
-//     );
-//     await new Promise((resolve) => setTimeout(resolve, ADD_ENERGY_DELAY));
-
-//     // Step 3: Confirm adding energy
-//     const confirmTx = await contract.confirmAddEnergy(kwh);
-//     await confirmTx.wait();
-//     alert(
-//       `Energy added successfully! ${kwh} kWh added to the pool. Transaction hash: ${confirmTx.hash}`
-//     );
-
-//     return {
-//       requestTxHash: requestTx.hash,
-//       confirmTxHash: confirmTx.hash,
-//     };
-//   } catch (error) {
-//     console.error("Error adding energy:", error);
-//     let errorMessage = error.reason || error.message || "Failed to add energy";
-//     if (error.data) {
-//       try {
-//         const iface = new ethers.Interface(CONTRACT_ABI);
-//         const decodedError = iface.parseError(error.data);
-//         errorMessage = `${decodedError.name}: ${JSON.stringify(
-//           decodedError.args
-//         )}`;
-//       } catch (decodeError) {
-//         console.error("Could not decode revert reason:", decodeError);
-//       }
-//     }
-//     alert(`Error adding energy: ${errorMessage}`);
-//     throw new Error(`Error adding energy: ${errorMessage}`);
-//   }
-// };
-
-// // pause function
-// export const pauseContract = async (networkName = "hardhat") => {
-//   try {
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       true
-//     );
-//     const signer = await contract.runner.provider.getSigner();
-//     const signerAddress = await signer.getAddress();
-
-//     const ownerAddress = await getSolarFarm();
-//     if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
-//       alert("Only the contract owner (solar farm) can pause the contract");
-//       throw new Error("Only the contract owner can pause the contract");
-//     }
-
-//     const tx = await contract.pause();
-//     const receipt = await tx.wait();
-//     alert(`Contract paused successfully! Transaction hash: ${receipt.hash}`);
-//     return receipt.hash;
-//   } catch (error) {
-//     console.error("Error pausing contract:", error);
-//     let errorMessage =
-//       error.reason || error.message || "Failed to pause contract";
-//     if (error.data) {
-//       try {
-//         const iface = new ethers.Interface(CONTRACT_ABI);
-//         const decodedError = iface.parseError(error.data);
-//         errorMessage = `${decodedError.name}: ${JSON.stringify(
-//           decodedError.args
-//         )}`;
-//       } catch (decodeError) {
-//         console.error("Could not decode revert reason:", decodeError);
-//       }
-//     }
-//     alert(`Error pausing contract: ${errorMessage}`);
-//     throw new Error(`Error pausing contract: ${errorMessage}`);
-//   }
-// };
-
-// export const unpauseContract = async (networkName = "hardhat") => {
-//   try {
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       true
-//     );
-//     const signer = await contract.runner.provider.getSigner();
-//     const signerAddress = await signer.getAddress();
-
-//     const ownerAddress = await getSolarFarm();
-//     if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
-//       alert("Only the contract owner (solar farm) can unpause the contract");
-//       throw new Error("Only the contract owner can unpause the contract");
-//     }
-
-//     const tx = await contract.unpause();
-//     const receipt = await tx.wait();
-//     alert(`Contract unpaused successfully! Transaction hash: ${receipt.hash}`);
-//     return receipt.hash;
-//   } catch (error) {
-//     console.error("Error unpausing contract:", error);
-//     let errorMessage =
-//       error.reason || error.message || "Failed to unpause contract";
-//     if (error.data) {
-//       try {
-//         const iface = new ethers.Interface(CONTRACT_ABI);
-//         const decodedError = iface.parseError(error.data);
-//         errorMessage = `${decodedError.name}: ${JSON.stringify(
-//           decodedError.args
-//         )}`;
-//       } catch (decodeError) {
-//         console.error("Could not decode revert reason:", decodeError);
-//       }
-//     }
-//     alert(`Error unpausing contract: ${errorMessage}`);
-//     throw new Error(`Error unpausing contract: ${errorMessage}`);
-//   }
-// };
-
-// export const isPaused = async () => {
-//   const contract = await getContract(
-//     "hardhat",
-//     CONTRACT_ADDRESS,
-//     CONTRACT_ABI,
-//     false
-//   );
-
-//   return await contract.paused();
-// };
-
-// export const authorizeParty = async (address, networkName = "hardhat") => {
-//   try {
-//     if (!ethers.isAddress(address)) {
-//       alert("Invalid Ethereum address");
-//       throw new Error("Invalid Ethereum address");
-//     }
-
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       true
-//     );
-//     //await ensureContractOwner(contract, "authorize parties");
-
-//     const tx = await contract.authorizeParty(address);
-//     const receipt = await tx.wait();
-//     alert(`Party authorized successfully! Transaction hash: ${receipt.hash}`);
-//     return receipt.hash;
-//   } catch (error) {
-//     //handleTxError(error, "authorizing party");
-//   }
-// };
-
-// export const unauthorizeParty = async (address, networkName = "hardhat") => {
-//   try {
-//     if (!ethers.isAddress(address)) {
-//       alert("Invalid Ethereum address");
-//       throw new Error("Invalid Ethereum address");
-//     }
-//     console.log(address);
-
-//     const contract = await getContract(
-//       networkName,
-//       CONTRACT_ADDRESS,
-//       CONTRACT_ABI,
-//       true
-//     );
-//     //await ensureContractOwner(contract, "unauthorize parties");
-
-//     const tx = await contract.unAuthorizeParty(address);
-//     const receipt = await tx.wait();
-//     //alert(`Party unauthorized successfully! Transaction hash: ${receipt.hash}`);
-//     return receipt.hash;
-//   } catch (error) {
-//     //handleTxError(error, "unauthorizing party");
-//   }
-// };
-
-// Enhanced contract.js with comprehensive custom error handling
+// utils/contract.js
+// Prompt: Update contract.js to align with new EnergyContract.sol ABI, add all errors, include new functions, handle bypassStaleCheck, no ImageMessage/Firebase
 import { ethers } from "ethers";
 import CONTRACT_ABI from "../config/SolarFarmABI.json";
 import MOCKPRICE_ABI from "../config/MockPriceABI.json";
 import { Transaction } from "@/models/transaction";
 
 // Contract addresses
-const CONTRACT_ADDRESS = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
-const MOCKP_RICE_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+//const CONTRACT_ADDRESS = "0x57ff1764F8c32FEAc3A997D7911af39becb24cD1"; // Sepolia EnergyContract
+//const MOCKPRICE_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Mock for testing
+const CONTRACT_ADDRESS = "0xAcC9a13aFf257B6A65969288D059878AeB1c289b";
+//
 
 // Network configuration
 const NETWORK_CONFIG = {
-  hardhat: {
-    chainId: "31337",
-    rpcUrl: "http://192.168.1.13:8545",
-    chainName: "Hardhat",
-    currency: { name: "ETH", symbol: "ETH", decimals: 18 },
-    blockExplorerUrls: [],
-  },
-  sepolia: {
-    chainId: "11155111",
-    rpcUrl:
-      process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL ||
-      "https://eth-sepolia.g.alchemy.com/v2/YOUR_ALCHEMY_ACCESS_KEY",
-    chainName: "Sepolia",
-    currency: { name: "ETH", symbol: "ETH", decimals: 18 },
-    blockExplorerUrls: ["https://sepolia.etherscan.io"],
-  },
+    hardhat: {
+        chainId: "31337", // Hardhat's chainId when forking Sepolia
+        rpcUrl: "http://127.0.0.1:8545/",
+        // chainName: "Hardhat Local",
+        currency: { name: "ETH", symbol: "ETH", decimals: 18 },
+        blockExplorerUrls: [],
+    },
+    localhost: {
+        chainId: "31337",
+        rpcUrl: "http://127.0.0.1:8545",
+        chainName: "Localhost",
+        currency: { name: "ETH", symbol: "ETH", decimals: 18 },
+        blockExplorerUrls: [],
+    },
+    sepolia: {
+        chainId: "11155111",
+        rpcUrl: "https://eth-sepolia.g.alchemy.com/v2/9HRFmzrQc9Mw5J5u1BW4bMJq2B-6ktFL",
+        chainName: "Sepolia",
+        currency: { name: "ETH", symbol: "ETH", decimals: 18 },
+        blockExplorerUrls: ["https://sepolia.etherscan.io"],
+    },
 };
 
-// Custom error decoder utility
+export const NETWORK_NAME = "sepolia";
+// Custom error decoder
 const decodeCustomError = (error) => {
-  try {
-    const iface = new ethers.Interface(CONTRACT_ABI);
-    const errorData =
-      error.data || (error.error && error.error.data) || error.reason;
-
-    if (!errorData) return null;
-
-    // Try to parse the error
-    const decodedError = iface.parseError(errorData);
-    if (!decodedError) return null;
-
-    return {
-      name: decodedError.name,
-      args: decodedError.args,
-      signature: decodedError.signature,
-    };
-  } catch (decodeError) {
-    console.warn("Could not decode custom error:", decodeError);
-    return null;
-  }
+    try {
+        const iface = new ethers.Interface(CONTRACT_ABI);
+        const errorData = error.data || (error.error && error.error.data) || error.reason;
+        if (!errorData) return null;
+        const decodedError = iface.parseError(errorData);
+        if (!decodedError) return null;
+        return {
+            name: decodedError.name,
+            args: decodedError.args,
+            signature: decodedError.signature,
+        };
+    } catch (decodeError) {
+        console.warn("Could not decode custom error:", decodeError);
+        return null;
+    }
 };
 
-// Enhanced error handler with custom error support
+// Enhanced error handler
 const handleContractError = (error, operation = "contract operation") => {
-  console.error(`Error during ${operation}:`, error);
-
-  const decodedError = decodeCustomError(error);
-
-  if (decodedError) {
-    switch (decodedError.name) {
-      case "InsufficientEnergyAvailable":
-        return `Insufficient energy available. Requested: ${decodedError.args[0]} kWh, Available: ${decodedError.args[1]} kWh`;
-
-      case "PaymentAmountTooSmall":
-        const providedEth = Number(
-          ethers.formatEther(decodedError.args[0])
-        ).toFixed(6);
-        const requiredEth = Number(
-          ethers.formatEther(decodedError.args[1])
-        ).toFixed(6);
-        return `Payment too small. Provided: ${providedEth} ETH, Required: ${requiredEth} ETH`;
-
-      case "PriceFeedStale":
-        const lastUpdate = new Date(
-          Number(decodedError.args[0]) * 1000
-        ).toLocaleString();
-        const threshold = Number(decodedError.args[1]) / 60; // Convert to minutes
-        return `Price feed is stale. Last update: ${lastUpdate}`;
-
-      case "CommitmentExpired":
-        const commitTime = Number(decodedError.args[0]);
-        const currentTime = Number(decodedError.args[1]);
-        if (commitTime === 0) {
-          return "No commitment found. Please commit to a purchase first.";
+    console.error(`Error during ${operation}:`, error);
+    const decodedError = decodeCustomError(error);
+    if (decodedError) {
+        switch (decodedError.name) {
+            case "InsufficientEnergyAvailable":
+                return `Insufficient energy available. Requested: ${decodedError.args[0]} kWh, Available: ${decodedError.args[1]} kWh`;
+            case "PaymentAmountTooSmall":
+                return `Payment too small. Provided: ${ethers.formatEther(decodedError.args[0])} ETH, Required: ${ethers.formatEther(decodedError.args[1])} ETH`;
+            case "PriceFeedStale":
+                return `Price feed is stale. Last update: ${new Date(Number(decodedError.args[0]) * 1000).toLocaleString()}, Threshold: ${Number(decodedError.args[1]) / 60} minutes`;
+            case "CommitmentExpired":
+                return decodedError.args[0] === 0
+                    ? "No commitment found"
+                    : `Commitment expired. Committed at: ${new Date(Number(decodedError.args[0]) * 1000).toLocaleString()}`;
+            case "CommitmentCooldownActive":
+                return `Commitment cooldown active. Last commit: ${new Date(Number(decodedError.args[0]) * 1000).toLocaleString()}`;
+            case "DelayNotElapsed":
+                return `Delay not elapsed. Request time: ${new Date(Number(decodedError.args[0]) * 1000).toLocaleString()}`;
+            case "InvalidPartyAddress":
+                return "Invalid address provided";
+            case "PartyAlreadyAuthorized":
+                return "Party is already authorized";
+            case "PartyNotAuthorized":
+                return "Party is not authorized";
+            case "MaxAuthorizedPartiesReached":
+                return "Maximum authorized parties reached";
+            case "NoPendingRequest":
+                return "No pending request found";
+            case "InvalidCommitment":
+                return "Invalid commitment parameters";
+            case "InvalidCommitmentHash":
+                return "Invalid commitment hash";
+            case "PaymentFailed":
+                return "Payment transfer failed";
+            case "NoRefundsAvailable":
+                return "No refunds available";
+            case "InvalidTransactionID":
+                return "Invalid transaction ID";
+            case "InvalidPriceBounds":
+                return "ETH price outside valid bounds (100-10,000 USD)";
+            case "InvalidBatchIndex":
+                return `Invalid batch index. Start: ${decodedError.args[0]}, Length: ${decodedError.args[1]}`;
+            case "PartyNotFoundInList":
+                return "Party not found in authorized list";
+            case "InvalidEthPrice":
+                return "Invalid ETH price data";
+            case "EnforcedPause":
+                return "Contract is paused";
+            case "ExpectedPause":
+                return "Contract should be paused for this operation";
+            case "OwnableInvalidOwner":
+                return `Invalid owner address: ${decodedError.args[0]}`;
+            case "OwnableUnauthorizedAccount":
+                return "Only contract owner can perform this action";
+            case "ReentrancyGuardReentrantCall":
+                return "Reentrancy detected";
+            default:
+                return `Contract error: ${decodedError.name} - ${JSON.stringify(decodedError.args)}`;
         }
-        return `Commitment expired. Committed at: ${new Date(
-          commitTime * 1000
-        ).toLocaleString()}, Current: ${new Date(
-          currentTime * 1000
-        ).toLocaleString()}`;
-
-      case "CommitmentCooldownActive":
-        const lastCommit = new Date(
-          Number(decodedError.args[0]) * 1000
-        ).toLocaleString();
-        return `Commitment cooldown active. Last commit: ${lastCommit}. Please wait before committing again.`;
-
-      case "DelayNotElapsed":
-        const requestTime = new Date(
-          Number(decodedError.args[0]) * 1000
-        ).toLocaleString();
-        return `Delay not elapsed. Request time: ${requestTime}. Please wait longer before confirming.`;
-
-      case "InvalidPartyAddress":
-        return "Invalid address provided. Please check the address and try again.";
-
-      case "PartyAlreadyAuthorized":
-        return "Party is already authorized.";
-
-      case "PartyNotAuthorized":
-        return "Party is not authorized to perform this action.";
-
-      case "MaxAuthorizedPartiesReached":
-        return "Maximum number of authorized parties reached.";
-
-      case "NoPendingRequest":
-        return "No pending request found.";
-
-      case "InvalidCommitment":
-        return "Invalid commitment. The provided parameters don't match the commitment hash.";
-
-      case "InvalidCommitmentHash":
-        return "Invalid commitment hash provided.";
-
-      case "PaymentFailed":
-        return "Payment transfer failed. Please try again.";
-
-      case "NoRefundsAvailable":
-        return "No refunds available for withdrawal.";
-
-      case "InvalidTransactionID":
-        return "Invalid transaction ID provided.";
-
-      case "InvalidPriceBounds":
-        return "ETH price is outside valid bounds. Please try again later.";
-
-      case "InvalidBatchIndex":
-        const startIdx = Number(decodedError.args[0]);
-        const arrayLen = Number(decodedError.args[1]);
-        return `Invalid batch index. Start: ${startIdx}, Array length: ${arrayLen}`;
-
-      case "PartyNotFoundInList":
-        return "Party not found in authorized list.";
-
-      case "InvalidEthPrice":
-        return "Invalid ETH price data. Please try again later.";
-
-      case "EnforcedPause":
-        return "Contract is currently paused. Please try again later.";
-
-      case "ExpectedPause":
-        return "Contract should be paused for this operation.";
-
-      case "OwnableUnauthorizedAccount":
-        return "Unauthorized: Only the contract owner can perform this action.";
-
-      case "ReentrancyGuardReentrantCall":
-        return "Reentrancy detected. Transaction rejected for security.";
-
-      default:
-        return `Contract error: ${decodedError.name} - ${JSON.stringify(
-          decodedError.args
-        )}`;
     }
-  }
-
-  // Fallback to original error message
-  return error.reason || error.message || `Failed to perform ${operation}`;
+    return error.reason || error.message || `Failed to perform ${operation}`;
 };
 
-// Initialize contract with enhanced error handling
-const getContract = async (
-  networkName = "hardhat",
-  address,
-  abi,
-  useSigner = false
-) => {
-  try {
-    let provider;
-    let signer;
-
-    if (useSigner && typeof window.ethereum !== "undefined") {
-      provider = new ethers.BrowserProvider(window.ethereum);
-      await window.ethereum.request({ method: "eth_requestAccounts" });
-      signer = await provider.getSigner();
-
-      const network = await provider.getNetwork();
-      const targetConfig = NETWORK_CONFIG[networkName];
-
-      if (network.chainId.toString() !== targetConfig.chainId) {
-        try {
-          await window.ethereum.request({
-            method: "wallet_switchEthereumChain",
-            params: [
-              {
-                chainId: `0x${parseInt(targetConfig.chainId, 10).toString(16)}`,
-              },
-            ],
-          });
-        } catch (switchError) {
-          if (switchError.code === 4902) {
-            await window.ethereum.request({
-              method: "wallet_addEthereumChain",
-              params: [
-                {
-                  chainId: `0x${parseInt(targetConfig.chainId, 10).toString(
-                    16
-                  )}`,
-                  chainName: targetConfig.chainName,
-                  rpcUrls: [targetConfig.rpcUrl],
-                  nativeCurrency: targetConfig.currency,
-                  blockExplorerUrls: targetConfig.blockExplorerUrls,
-                },
-              ],
-            });
-          } else {
-            throw switchError;
-          }
+// Initialize contract
+const getContract = async (networkName = NETWORK_NAME, address, abi, useSigner = false) => {
+    try {
+        let provider, signer;
+        if (useSigner && typeof window.ethereum !== "undefined") {
+            provider = new ethers.BrowserProvider(window.ethereum);
+            await window.ethereum.request({ method: "eth_requestAccounts" });
+            signer = await provider.getSigner();
+            const network = await provider.getNetwork();
+            const targetConfig = NETWORK_CONFIG[networkName];
+            if (network.chainId.toString() !== targetConfig.chainId) {
+                try {
+                    await window.ethereum.request({
+                        method: "wallet_switchEthereumChain",
+                        params: [{ chainId: `0x${parseInt(targetConfig.chainId, 10).toString(16)}` }],
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: "wallet_addEthereumChain",
+                            params: [
+                                {
+                                    chainId: `0x${parseInt(targetConfig.chainId, 10).toString(16)}`,
+                                    chainName: targetConfig.chainName,
+                                    rpcUrls: [targetConfig.rpcUrl],
+                                    nativeCurrency: targetConfig.currency,
+                                    blockExplorerUrls: targetConfig.blockExplorerUrls,
+                                },
+                            ],
+                        });
+                    } else {
+                        throw switchError;
+                    }
+                }
+            }
+            return new ethers.Contract(address, abi, signer);
+        } else {
+            const targetConfig = NETWORK_CONFIG[networkName];
+            provider = new ethers.JsonRpcProvider(targetConfig.rpcUrl);
+            return new ethers.Contract(address, abi, provider);
         }
-      }
-      return new ethers.Contract(address, abi, signer);
-    } else {
-      const targetConfig = NETWORK_CONFIG[networkName];
-      provider = new ethers.JsonRpcProvider(targetConfig.rpcUrl);
-      return new ethers.Contract(address, abi, provider);
+    } catch (error) {
+        throw new Error(`Failed to initialize contract: ${handleContractError(error, "contract initialization")}`);
     }
-  } catch (error) {
-    const errorMessage = handleContractError(error, "contract initialization");
-    throw new Error(`Failed to initialize contract: ${errorMessage}`);
-  }
 };
 
-// Enhanced getCost function with better error handling
-export const getCost = async (amount, networkName = "hardhat") => {
-  try {
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      false
-    );
-    const energy = Number(amount);
-
-    if (isNaN(energy) || energy <= 0) {
-      throw new Error("Energy amount must be a valid number greater than zero");
+// Check contract connection
+export const checkContractConnection = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        const provider = contract.runner.provider;
+        const network = await provider.getNetwork();
+        const targetConfig = NETWORK_CONFIG[networkName];
+        if (network.chainId.toString() !== targetConfig.chainId) {
+            throw new Error(`Wrong network: expected chainId ${targetConfig.chainId}, got ${network.chainId}`);
+        }
+        const code = await provider.getCode(CONTRACT_ADDRESS);
+        if (code === "0x") {
+            throw new Error(`No contract deployed at ${CONTRACT_ADDRESS}`);
+        }
+        const solarFarmAddress = await contract.solarFarm();
+        if (!ethers.isAddress(solarFarmAddress)) {
+            throw new Error(`Invalid solarFarm address: ${solarFarmAddress}`);
+        }
+        return {
+            isConnected: true,
+            message: `Connected to EnergyContract at ${CONTRACT_ADDRESS} on ${targetConfig.chainName}`,
+            chainId: network.chainId.toString(),
+            solarFarmAddress,
+        };
+    } catch (error) {
+        return {
+            isConnected: false,
+            message: `Connection failed: ${handleContractError(error, "contract connection")}`,
+            chainId: null,
+            solarFarmAddress: null,
+        };
     }
-
-    const ethPriceInUsd = await getLatestEthPriceWC(networkName);
-    const ethPrice = BigInt(Math.round(ethPriceInUsd));
-    const ethPriceScaled = ethPrice;
-
-    const priceInWei = await contract.calculateRequiredPayment(
-      energy,
-      ethPriceScaled * BigInt(1e8)
-    );
-
-    const priceInEth = ethers.formatUnits(priceInWei, 18);
-    return Number(priceInEth).toFixed(6);
-  } catch (error) {
-    const errorMessage = handleContractError(error, "cost calculation");
-    throw new Error(errorMessage);
-  }
 };
 
-// Enhanced getLatestEthPriceWC with custom error handling
-export const getLatestEthPriceWC = async (networkName = "hardhat") => {
-  try {
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      false
-    );
-    const price = await contract.getLatestEthPriceWithoutCaching();
-    return Number(price) / 1e18;
-  } catch (error) {
-    const errorMessage = handleContractError(error, "ETH price fetch");
-    throw new Error(errorMessage);
-  }
-};
-
-// Enhanced commitPurchase with custom error handling
-export const commitPurchase = async (networkName = "hardhat", amount, user) => {
-  try {
-    if (amount > 1000) {
-      throw new Error("Amount cannot be bigger than 1000 kWh");
+// Get solar farm address
+export const getSolarFarm = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        return await contract.solarFarm();
+    } catch (error) {
+        throw new Error(`Error fetching solar farm: ${handleContractError(error, "solar farm fetch")}`);
     }
-
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      true
-    );
-    const nonce = getNonceFromUid(user._uid);
-    const hash = getHashedCommitment(amount, nonce, user._ethereumAddress);
-
-    const tx = await contract.commitPurchase(hash);
-    await tx.wait();
-    return hash;
-  } catch (error) {
-    const errorMessage = handleContractError(error, "purchase commitment");
-    throw new Error(errorMessage);
-  }
 };
 
-// Enhanced revealPurchase with custom error handling
-export const revealPurchase = async (networkName = "hardhat", amount, user) => {
-  try {
-    if (!amount || amount <= 0 || amount > 1000) {
-      throw new Error("Amount must be between 1 and 1000 kWh");
+// Get latest ETH price without caching
+export const getLatestEthPriceWC = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        const price = await contract.getLatestEthPriceWithoutCaching();
+        // Changed: Adjust for contract's 1e18 scaling
+        return Number(price) / 1e18;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "ETH price fetch without cache");
+        alert(errorMessage);
+        throw new Error(errorMessage);
     }
-    if (!user || !user._ethereumAddress) {
-      throw new Error("User Ethereum address is required");
+};
+
+// Get latest ETH price (updates cache)
+export const getLatestEthPrice = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const tx = await contract.getLatestEthPrice();
+        await tx.wait();
+        const price = await contract.getCachedEthPrice();
+        // Changed: Adjust for contract's 1e18 scaling
+        return (Number(price) / 1e18).toString();
+    } catch (error) {
+        const errorMessage = handleContractError(error, "ETH price fetch with cache");
+        alert(errorMessage);
+        throw new Error(errorMessage);
     }
+};
 
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      true
-    );
-    const signer = await contract.runner.provider.getSigner();
-    const signerAddress = await signer.getAddress();
-
-    if (signerAddress.toLowerCase() !== user._ethereumAddress.toLowerCase()) {
-      throw new Error(
-        "Signer address does not match provided Ethereum address"
-      );
+// Get cost for energy amount
+export const getCost = async (amount, networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        const energy = Number(amount);
+        if (isNaN(energy) || energy <= 0 || energy > 1000) {
+            throw new Error("Energy amount must be between 1 and 1000 kWh");
+        }
+        // Changed: Use getLatestEthPriceWC and scale correctly for contract
+        const ethPriceInUsd = await getLatestEthPriceWC(networkName);
+        const ethPriceScaled = BigInt(Math.round(ethPriceInUsd * 1e8));
+        const priceInWei = await contract.calculateRequiredPayment(energy, ethPriceScaled);
+        const priceInEth = ethers.formatUnits(priceInWei, 18);
+        return Number(priceInEth).toFixed(6);
+    } catch (error) {
+        const errorMessage = handleContractError(error, "cost calculation");
+        throw new Error(errorMessage);
     }
-
-    await contract.getLatestEthPrice();
-    const ethPrice = await contract.getCachedEthPrice();
-    const totalCostWei = await contract.calculateRequiredPayment(
-      amount,
-      ethPrice / BigInt(10e10)
-    );
-
-    const gasEstimate = await contract.revealPurchase.estimateGas(
-      amount,
-      getNonceFromUid(user._uid),
-      { value: totalCostWei }
-    );
-
-    const revealTx = await contract.revealPurchase(
-      amount,
-      getNonceFromUid(user._uid),
-      { value: totalCostWei, gasLimit: gasEstimate }
-    );
-
-    const receipt = await revealTx.wait();
-    return receipt.hash;
-  } catch (error) {
-    const errorMessage = handleContractError(error, "purchase reveal");
-    throw new Error(errorMessage);
-  }
 };
 
-// Enhanced addEnergy with custom error handling
-export const addEnergy = async (kwh, networkName = "hardhat") => {
-  try {
-    if (!kwh || kwh <= 0 || kwh > 1000) {
-      alert("kWh must be between 1 and 1000");
-      throw new Error("kWh must be between 1 and 1000");
+// Get available energy
+export const getAvailableEnergy = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        const energy = await contract.availableKWh();
+        return Number(energy);
+    } catch (error) {
+        const errorMessage = handleContractError(error, "available energy fetch");
+        throw new Error(errorMessage);
     }
+};
 
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      true
-    );
-    const signer = await contract.runner.provider.getSigner();
-    const signerAddress = await signer.getAddress();
-    const ownerAddress = await getSolarFarm(networkName);
-
-    if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
-      alert("Only the contract owner (solar farm) can add energy");
-      throw new Error("Only the contract owner can add energy");
+// Commit purchase
+export const commitPurchase = async (networkName = NETWORK_NAME, amount, user) => {
+    try {
+        if (!amount || amount <= 0 || amount > 1000) {
+            throw new Error("Amount must be between 1 and 1000 kWh");
+        }
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const nonce = getNonceFromUid(user._uid);
+        const hash = getHashedCommitment(amount, nonce, user._ethereumAddress);
+        const tx = await contract.commitPurchase(hash);
+        await tx.wait();
+        return hash;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "purchase commitment");
+        alert(errorMessage);
+        throw new Error(errorMessage);
     }
-
-    // Step 1: Request to add energy
-    const requestTx = await contract.requestAddEnergy(kwh);
-    await requestTx.wait();
-
-    // Step 2: Wait for ADD_ENERGY_DELAY (2 minutes = 120,000 ms)
-    const ADD_ENERGY_DELAY = 2 * 60 * 1000; // 2 minutes in milliseconds
-    alert(
-      `Please wait 2 minutes before confirming the energy addition. Transaction hash: ${requestTx.hash}`
-    );
-    await new Promise((resolve) => setTimeout(resolve, ADD_ENERGY_DELAY));
-
-    // Step 3: Confirm adding energy
-    const confirmTx = await contract.confirmAddEnergy(kwh);
-    await confirmTx.wait();
-    alert(
-      `Energy added successfully! ${kwh} kWh added to the pool. Transaction hash: ${confirmTx.hash}`
-    );
-
-    return {
-      requestTxHash: requestTx.hash,
-      confirmTxHash: confirmTx.hash,
-    };
-  } catch (error) {
-    console.error("Error adding energy:", error);
-    const errorMessage = handleContractError(error, "energy addition");
-    alert(`Error adding energy: ${errorMessage}`);
-    throw new Error(`Error adding energy: ${errorMessage}`);
-  }
 };
 
-// Enhanced authorization functions with custom error handling
-export const authorizeParty = async (address, networkName = "hardhat") => {
-  try {
-    if (!ethers.isAddress(address)) {
-      throw new Error("Invalid Ethereum address");
+// Reveal purchase
+export const revealPurchase = async (networkName = NETWORK_NAME, amount, user) => {
+    try {
+        if (!amount || amount <= 0 || amount > 1000) {
+            throw new Error("Amount must be between 1 and 1000 kWh");
+        }
+        if (!user || !user._ethereumAddress) {
+            throw new Error("User Ethereum address is required");
+        }
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const signer = await contract.runner.provider.getSigner();
+        const signerAddress = await signer.getAddress();
+        if (signerAddress.toLowerCase() !== user._ethereumAddress.toLowerCase()) {
+            throw new Error("Signer address does not match provided Ethereum address");
+        }
+        const ethPrice = await getLatestEthPriceWC(networkName);
+        const totalCostWei = await contract.calculateRequiredPayment(amount, BigInt(ethPrice * 1e8));
+        const gasEstimate = await contract.revealPurchase.estimateGas(amount, getNonceFromUid(user._uid), {
+            value: totalCostWei,
+        });
+        const revealTx = await contract.revealPurchase(amount, getNonceFromUid(user._uid), {
+            value: totalCostWei,
+            gasLimit: gasEstimate,
+        });
+        const receipt = await revealTx.wait();
+        return receipt.hash;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "purchase reveal");
+        alert(errorMessage);
+        throw new Error(errorMessage);
     }
-
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      true
-    );
-    const tx = await contract.authorizeParty(address);
-    const receipt = await tx.wait();
-    return receipt.hash;
-  } catch (error) {
-    const errorMessage = handleContractError(error, "party authorization");
-    throw new Error(errorMessage);
-  }
 };
 
-export const unauthorizeParty = async (address, networkName = "hardhat") => {
-  try {
-    if (!ethers.isAddress(address)) {
-      throw new Error("Invalid Ethereum address");
+// Add energy
+export const addEnergy = async (kwh, networkName = NETWORK_NAME) => {
+    try {
+        if (!kwh || kwh <= 0 || kwh > 1000) {
+            alert("kWh must be between 1 and 1000");
+            throw new Error("kWh must be between 1 and 1000");
+        }
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const signer = await contract.runner.provider.getSigner();
+        const signerAddress = await signer.getAddress();
+        const ownerAddress = await getSolarFarm(networkName);
+        if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
+            alert("Only the contract owner (solar farm) can add energy");
+            throw new Error("Only the contract owner can add energy");
+        }
+        const requestTx = await contract.requestAddEnergy(kwh);
+        const requestReceipt = await requestTx.wait();
+        // Wait for ADD_ENERGY_DELAY
+        const ADD_ENERGY_DELAY = await contract.ADD_ENERGY_DELAY(); // Changed: Query contract constant
+        alert(`Please wait ${Number(ADD_ENERGY_DELAY) / 60} seconds before confirming. Tx hash: ${requestTx.hash}`);
+        await new Promise((resolve) => setTimeout(resolve, Number(ADD_ENERGY_DELAY) * 1000));
+        const confirmTx = await contract.confirmAddEnergy(kwh);
+        const confirmReceipt = await confirmTx.wait();
+        alert(`Energy added: ${kwh} kWh. Tx hash: ${confirmTx.hash}`);
+        return {
+            requestTxHash: requestReceipt.hash,
+            confirmTxHash: confirmReceipt.hash,
+        };
+    } catch (error) {
+        const errorMessage = handleContractError(error, "energy addition");
+        alert(`Error adding energy: ${errorMessage}`);
+        throw new Error(errorMessage);
     }
-
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      true
-    );
-    const tx = await contract.unAuthorizeParty(address);
-    const receipt = await tx.wait();
-    return receipt.hash;
-  } catch (error) {
-    const errorMessage = handleContractError(error, "party deauthorization");
-    throw new Error(errorMessage);
-  }
 };
 
-// Enhanced pause/unpause functions
-export const pauseContract = async (networkName = "hardhat") => {
-  try {
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      true
-    );
-    const tx = await contract.pause();
-    const receipt = await tx.wait();
-    return receipt.hash;
-  } catch (error) {
-    const errorMessage = handleContractError(error, "contract pause");
-    throw new Error(errorMessage);
-  }
-};
-
-export const unpauseContract = async (networkName = "hardhat") => {
-  try {
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      true
-    );
-    const tx = await contract.unpause();
-    const receipt = await tx.wait();
-    return receipt.hash;
-  } catch (error) {
-    const errorMessage = handleContractError(error, "contract unpause");
-    throw new Error(errorMessage);
-  }
-};
-
-// Keep all other existing functions with enhanced error handling applied
-export const checkContractConnection = async (networkName = "hardhat") => {
-  try {
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      false
-    );
-    const provider = contract.runner.provider;
-
-    const network = await provider.getNetwork();
-    const targetConfig = NETWORK_CONFIG[networkName];
-    if (network.chainId.toString() !== targetConfig.chainId) {
-      throw new Error(
-        `Wrong network: expected chainId ${targetConfig.chainId}, got ${network.chainId}`
-      );
+// Pause contract
+export const pauseContract = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const signer = await contract.runner.provider.getSigner();
+        const signerAddress = await signer.getAddress();
+        const ownerAddress = await getSolarFarm(networkName);
+        if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
+            alert("Only the contract owner can pause the contract");
+            throw new Error("Only the contract owner can pause the contract");
+        }
+        const tx = await contract.pause();
+        const receipt = await tx.wait();
+        alert(`Contract paused. Tx hash: ${receipt.hash}`);
+        return receipt.hash;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "contract pause");
+        alert(errorMessage);
+        throw new Error(errorMessage);
     }
+};
 
-    const code = await provider.getCode(CONTRACT_ADDRESS);
-    if (code === "0x") {
-      throw new Error(`No contract deployed at address ${CONTRACT_ADDRESS}`);
+// Unpause contract
+export const unpauseContract = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const signer = await contract.runner.provider.getSigner();
+        const signerAddress = await signer.getAddress();
+        const ownerAddress = await getSolarFarm(networkName);
+        if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
+            alert("Only the contract owner can unpause the contract");
+            throw new Error("Only the contract owner can unpause the contract");
+        }
+        const tx = await contract.unpause();
+        const receipt = await tx.wait();
+        alert(`Contract unpaused. Tx hash: ${receipt.hash}`);
+        return receipt.hash;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "contract unpause");
+        alert(errorMessage);
+        throw new Error(errorMessage);
     }
+};
 
-    const solarFarmAddress = await contract.solarFarm();
-    if (!ethers.isAddress(solarFarmAddress)) {
-      throw new Error(
-        `Invalid solarFarm address returned: ${solarFarmAddress}`
-      );
+// Check pause status
+export const isPaused = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        return await contract.paused();
+    } catch (error) {
+        const errorMessage = handleContractError(error, "pause status check");
+        throw new Error(errorMessage);
     }
-
-    return {
-      isConnected: true,
-      message: `Successfully connected to EnergyContract at ${CONTRACT_ADDRESS} on ${targetConfig.chainName}`,
-      chainId: network.chainId.toString(),
-      solarFarmAddress,
-    };
-  } catch (error) {
-    return {
-      isConnected: false,
-      message: `Connection failed: ${error.message}`,
-      chainId: null,
-      solarFarmAddress: null,
-    };
-  }
 };
 
-// Utility functions (keep existing implementations)
-const getHashedCommitment = (kWh, nonce, sender) => {
-  return ethers.keccak256(
-    ethers.solidityPacked(
-      ["uint256", "uint256", "address"],
-      [kWh, nonce, sender]
-    )
-  );
+// Authorize party
+export const authorizeParty = async (address, networkName = NETWORK_NAME) => {
+    try {
+        if (!ethers.isAddress(address)) {
+            throw new Error("Invalid Ethereum address");
+        }
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const tx = await contract.authorizeParty(address);
+        const receipt = await tx.wait();
+        alert(`Party authorized. Tx hash: ${receipt.hash}`);
+        return receipt.hash;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "party authorization");
+        alert(errorMessage);
+        throw new Error(errorMessage);
+    }
 };
 
-export const getNonceFromUid = (uid) => {
-  if (typeof uid !== "string" || uid.length === 0) {
-    throw new Error("Invalid Firebase UID");
-  }
-  const hash = ethers.keccak256(ethers.toUtf8Bytes(uid));
-  const hashNumber = Number(BigInt(hash.slice(0, 10)) & BigInt(0xffffffff));
-  const nonce = 10000 + (hashNumber % 90000);
-  return nonce.toString();
+// Unauthorize party
+export const unauthorizeParty = async (address, networkName = NETWORK_NAME) => {
+    try {
+        if (!ethers.isAddress(address)) {
+            throw new Error("Invalid Ethereum address");
+        }
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const tx = await contract.unAuthorizeParty(address);
+        const receipt = await tx.wait();
+        alert(`Party unauthorized. Tx hash: ${receipt.hash}`);
+        return receipt.hash;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "party deauthorization");
+        alert(errorMessage);
+        throw new Error(errorMessage);
+    }
 };
 
-// Export all existing functions with enhanced error handling
-export const getSolarFarm = async (networkName = "hardhat") => {
-  try {
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      false
-    );
-    return await contract.solarFarm();
-  } catch (error) {
-    const errorMessage = handleContractError(
-      error,
-      "solar farm address retrieval"
-    );
-    throw new Error(errorMessage);
-  }
+// Get transactions
+export const getTransactions = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        const transactionCount = await contract.getTransactionsCount(); // Changed: Use getTransactionsCount
+        const transactionCountNum = Number(transactionCount);
+        const transactions = [];
+        for (let i = 0; i < transactionCountNum; i++) {
+            try {
+                const tx = await contract.getTransaction(i); // Changed: Use getTransaction
+                transactions.push(
+                    new Transaction({
+                        index: i,
+                        buyer: tx.buyer,
+                        kWh: tx.kWh.toString(),
+                        pricePerKWhUSD: tx.pricePerKWhUSD.toString(),
+                        ethPriceUSD: tx.ethPriceUSD.toString(),
+                        timestamp: Number(tx.timestamp),
+                    }),
+                );
+            } catch (error) {
+                transactions.push(
+                    new Transaction({
+                        index: i,
+                        error: `Failed to fetch transaction ${i}`,
+                    }),
+                );
+            }
+        }
+        return transactions;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "transaction fetch");
+        throw new Error(errorMessage);
+    }
 };
 
-export const getAvailableEnergy = async (networkName = "hardhat") => {
-  try {
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      false
-    );
-    return await contract.availableKWh();
-  } catch (error) {
-    const errorMessage = handleContractError(error, "available energy fetch");
-    throw new Error(errorMessage);
-  }
-};
-
+// Check if authorized
 export const checkIfAuthorized = async (user) => {
-  try {
-    if (!user || !user.ethereumAddress) {
-      throw new Error(
-        "User is not authenticated or does not have an Ethereum address."
-      );
+    try {
+        if (!user || !user._ethereumAddress) {
+            throw new Error("User is not authenticated or lacks Ethereum address");
+        }
+        const contract = await getContract(CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        return await contract.checkAuthState(user._ethereumAddress);
+    } catch (error) {
+        const errorMessage = handleContractError(error, "authorization check");
+        throw new Error(errorMessage);
     }
-    const contract = await getContract(
-      "hardhat",
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      true
-    );
-    return await contract.checkAuthState(user.ethereumAddress);
-  } catch (error) {
-    const errorMessage = handleContractError(error, "authorization check");
-    throw new Error(errorMessage);
-  }
 };
 
-// Add other existing functions with enhanced error handling...
-export const getTransactions = async (networkName = "hardhat") => {
-  try {
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      false
-    );
-    const transactionCount = await contract.transactionCount();
-    const transactionCountNum = Number(transactionCount);
-    const transactions = [];
+// Convert ETH to USD
+export const convertEthToUsd = async (amount, networkName = NETWORK_NAME) => {
+    try {
+        const ethAmount = Number(amount);
+        if (isNaN(ethAmount) || ethAmount <= 0) {
+            throw new Error("ETH amount must be a valid number greater than zero");
+        }
+        const ethPriceInUsd = await getLatestEthPriceWC(networkName);
+        const usdAmount = (ethAmount * ethPriceInUsd).toFixed(2);
+        return {
+            ethAmount: ethAmount.toFixed(6),
+            usdAmount: usdAmount,
+            ethPriceInUsd: ethPriceInUsd.toFixed(2),
+        };
+    } catch (error) {
+        const errorMessage = handleContractError(error, "ETH to USD conversion");
+        throw new Error(errorMessage);
+    }
+};
 
-    for (let i = 0; i < transactionCountNum; i++) {
-      try {
-        const tx = await contract.transactions(i);
-        transactions.push(
-          new Transaction({
-            index: i,
+// Estimate gas for commit purchase
+export const estimateGasForCommitPurchase = async (networkName = NETWORK_NAME, amount, user) => {
+    try {
+        if (!amount || amount <= 0 || amount > 1000) {
+            throw new Error("Amount must be between 1 and 1000 kWh");
+        }
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const nonce = getNonceFromUid(user._uid);
+        const hash = getHashedCommitment(amount, nonce, user._ethereumAddress);
+        const gasEstimate = await contract.commitPurchase.estimateGas(hash);
+        const gasPrice = (await contract.runner.provider.getFeeData()).gasPrice || ethers.parseUnits("10", "gwei");
+        const gasCostInWei = BigInt(gasEstimate) * BigInt(gasPrice);
+        const gasCostInEth = Number(ethers.formatEther(gasCostInWei)).toFixed(6);
+        const energyCostInEth = await getCost(amount, networkName);
+        const energyCostInWei = ethers.parseEther(energyCostInEth);
+        const totalCostInWei = BigInt(Number(energyCostInWei)) + BigInt(Number(gasCostInWei));
+        const totalCostInEth = Number(ethers.formatEther(totalCostInWei)).toFixed(6);
+        return {
+            gasCostInEth,
+            energyCostInEth,
+            totalCostInEth,
+            gasEstimate: gasEstimate.toString(),
+        };
+    } catch (error) {
+        const errorMessage = handleContractError(error, "gas estimation for commit purchase");
+        throw new Error(errorMessage);
+    }
+};
+
+// Estimate gas for reveal purchase
+export const estimateGasForRevealPurchase = async (networkName = NETWORK_NAME, amount, user) => {
+    try {
+        if (!amount || amount <= 0 || amount > 1000) {
+            throw new Error("Amount must be between 1 and 1000 kWh");
+        }
+        if (!user || !user._ethereumAddress) {
+            throw new Error("User Ethereum address is required");
+        }
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const signer = await contract.runner.provider.getSigner();
+        const signerAddress = await signer.getAddress();
+        if (signerAddress.toLowerCase() !== user._ethereumAddress.toLowerCase()) {
+            throw new Error("Signer address does not match provided Ethereum address");
+        }
+        const ethPrice = await getLatestEthPriceWC(networkName);
+        const totalCostWei = await contract.calculateRequiredPayment(amount, BigInt(ethPrice * 1e8));
+        const nonce = getNonceFromUid(user._uid);
+        const gasEstimate = await contract.revealPurchase.estimateGas(amount, nonce, { value: totalCostWei });
+        const gasPrice = (await contract.runner.provider.getFeeData()).gasPrice || ethers.parseUnits("10", "gwei");
+        const gasCostInWei = BigInt(gasEstimate) * BigInt(gasPrice);
+        const gasCostInEth = Number(ethers.formatEther(gasCostInWei)).toFixed(6);
+        const energyCostInEth = Number(ethers.formatEther(totalCostWei)).toFixed(6);
+        const totalCostInWei = totalCostWei + gasCostInWei;
+        const totalCostInEth = Number(ethers.formatEther(totalCostInWei)).toFixed(6);
+        return {
+            gasCostInEth,
+            energyCostInEth,
+            totalCostInEth,
+            gasEstimate: gasEstimate.toString(),
+        };
+    } catch (error) {
+        const errorMessage = handleContractError(error, "gas estimation for reveal purchase");
+        throw new Error(errorMessage);
+    }
+};
+
+// Get ETH balance
+export const getEthBalance = async (address, networkName = NETWORK_NAME) => {
+    try {
+        if (!ethers.isAddress(address)) {
+            throw new Error("Invalid Ethereum address");
+        }
+        const targetConfig = NETWORK_CONFIG[networkName];
+        const provider = new ethers.JsonRpcProvider(targetConfig.rpcUrl);
+        const balanceWei = await provider.getBalance(address);
+        return ethers.formatEther(balanceWei);
+    } catch (error) {
+        const errorMessage = handleContractError(error, "ETH balance fetch");
+        throw new Error(errorMessage);
+    }
+};
+
+// Mock price functions
+// export const getMockPrice = async (networkName = NETWORK_NAME) => {
+//     try {
+//         const mockPriceContract = await getContract(networkName, MOCKPRICE_ADDRESS, MOCKPRICE_ABI, false);
+//         return (await mockPriceContract.latestRoundData()).answer;
+//     } catch (error) {
+//         const errorMessage = handleContractError(error, "mock price fetch");
+//         throw new Error(errorMessage);
+//     }
+// };
+
+// export const updateAnswer = async (price, networkName = NETWORK_NAME) => {
+//     try {
+//         const mockPriceContract = await getContract(networkName, MOCKPRICE_ADDRESS, MOCKPRICE_ABI, true);
+//         await mockPriceContract.updateAnswer(price);
+//     } catch (error) {
+//         const errorMessage = handleContractError(error, "mock price update");
+//         throw new Error(errorMessage);
+//     }
+// };
+
+// Toggle bypassStaleCheck
+export const setBypassStaleCheck = async (bypass, networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const signer = await contract.runner.provider.getSigner();
+        const signerAddress = await signer.getAddress();
+        const ownerAddress = await getSolarFarm(networkName);
+        if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
+            alert("Only the contract owner can set bypassStaleCheck");
+            throw new Error("Only the contract owner can set bypassStaleCheck");
+        }
+        const tx = await contract.setBypassStaleCheck(bypass);
+        const receipt = await tx.wait();
+        alert(`Bypass stale check set to ${bypass}. Tx hash: ${receipt.hash}`);
+        return receipt.hash;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "bypass stale check update");
+        alert(errorMessage);
+        throw new Error(errorMessage);
+    }
+};
+
+// Added: Get price latest update timestamp
+export const getPriceLatestUpdate = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        const timestamp = await contract.getPriceLatestUpdate();
+        return Number(timestamp);
+    } catch (error) {
+        const errorMessage = handleContractError(error, "price latest update fetch");
+        throw new Error(errorMessage);
+    }
+};
+
+// Added: Update payment receiver
+export const updatePaymentReceiver = async (newReceiver, networkName = NETWORK_NAME) => {
+    try {
+        if (!ethers.isAddress(newReceiver)) {
+            throw new Error("Invalid Ethereum address");
+        }
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const signer = await contract.runner.provider.getSigner();
+        const signerAddress = await signer.getAddress();
+        const ownerAddress = await getSolarFarm(networkName);
+        if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
+            alert("Only the contract owner can update payment receiver");
+            throw new Error("Only the contract owner can update payment receiver");
+        }
+        const tx = await contract.updatePaymentReceiver(newReceiver);
+        const receipt = await tx.wait();
+        alert(`Payment receiver updated to ${newReceiver}. Tx hash: ${receipt.hash}`);
+        return receipt.hash;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "payment receiver update");
+        alert(errorMessage);
+        throw new Error(errorMessage);
+    }
+};
+
+// Added: Withdraw refunds
+export const withdrawRefunds = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const tx = await contract.withdrawRefunds();
+        const receipt = await tx.wait();
+        alert(`Refunds withdrawn. Tx hash: ${receipt.hash}`);
+        return receipt.hash;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "refund withdrawal");
+        alert(errorMessage);
+        throw new Error(errorMessage);
+    }
+};
+
+// Added: Get authorized party list
+export const getAuthorizedPartyList = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        return await contract.getAuthorizedPartyList();
+    } catch (error) {
+        const errorMessage = handleContractError(error, "authorized party list fetch");
+        throw new Error(errorMessage);
+    }
+};
+
+// Added: Revoke all authorizations
+export const revokeAllAuthorizations = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const signer = await contract.runner.provider.getSigner();
+        const signerAddress = await signer.getAddress();
+        const ownerAddress = await getSolarFarm(networkName);
+        if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
+            alert("Only the contract owner can revoke all authorizations");
+            throw new Error("Only the contract owner can revoke all authorizations");
+        }
+        const tx = await contract.revokeAllAuthorizations();
+        const receipt = await tx.wait();
+        alert(`All authorizations revoked. Tx hash: ${receipt.hash}`);
+        return receipt.hash;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "revoke all authorizations");
+        alert(errorMessage);
+        throw new Error(errorMessage);
+    }
+};
+
+// Added: Revoke authorizations batch
+export const revokeAuthorizationsBatch = async (startIndex, batchSize, networkName = NETWORK_NAME) => {
+    try {
+        if (startIndex < 0 || batchSize <= 0) {
+            throw new Error("Invalid start index or batch size");
+        }
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const signer = await contract.runner.provider.getSigner();
+        const signerAddress = await signer.getAddress();
+        const ownerAddress = await getSolarFarm(networkName);
+        if (signerAddress.toLowerCase() !== ownerAddress.toLowerCase()) {
+            alert("Only the contract owner can revoke authorizations batch");
+            throw new Error("Only the contract owner can revoke authorizations batch");
+        }
+        const tx = await contract.revokeAuthorizationsBatch(startIndex, batchSize);
+        const receipt = await tx.wait();
+        alert(`Batch authorizations revoked. Tx hash: ${receipt.hash}`);
+        return receipt.hash;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "batch authorization revocation");
+        alert(errorMessage);
+        throw new Error(errorMessage);
+    }
+};
+
+// Added: Get transaction by ID
+export const getTransaction = async (id, networkName = NETWORK_NAME) => {
+    try {
+        if (id < 0) {
+            throw new Error("Invalid transaction ID");
+        }
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        const tx = await contract.getTransaction(id);
+        return new Transaction({
+            index: id,
             buyer: tx.buyer,
             kWh: tx.kWh.toString(),
             pricePerKWhUSD: tx.pricePerKWhUSD.toString(),
             ethPriceUSD: tx.ethPriceUSD.toString(),
             timestamp: Number(tx.timestamp),
-          })
-        );
-      } catch (error) {
-        console.error(`Error fetching transaction at index ${i}:`, error);
-        transactions.push(
-          new Transaction({
-            index: i,
-            error: `Failed to fetch transaction ${i}`,
-          })
-        );
-      }
+        });
+    } catch (error) {
+        const errorMessage = handleContractError(error, `transaction ${id} fetch`);
+        throw new Error(errorMessage);
     }
-    return transactions;
-  } catch (error) {
-    const errorMessage = handleContractError(error, "transaction fetch");
-    throw new Error(errorMessage);
-  }
 };
 
-export const convertEthToUsd = async (amount, networkName = "hardhat") => {
-  try {
-    const ethAmount = Number(amount);
-    if (isNaN(ethAmount) || ethAmount <= 0) {
-      throw new Error("ETH amount must be a valid number greater than zero");
+// Added: Clear expired commitment
+export const clearExpiredCommitment = async (buyer, networkName = NETWORK_NAME) => {
+    try {
+        if (!ethers.isAddress(buyer)) {
+            throw new Error("Invalid buyer address");
+        }
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, true);
+        const tx = await contract.clearExpiredCommitment(buyer);
+        const receipt = await tx.wait();
+        alert(`Expired commitment cleared for ${buyer}. Tx hash: ${receipt.hash}`);
+        return receipt.hash;
+    } catch (error) {
+        const errorMessage = handleContractError(error, "clear expired commitment");
+        alert(errorMessage);
+        throw new Error(errorMessage);
     }
-
-    const ethPriceInUsd = await getLatestEthPriceWC(networkName);
-    const usdAmount = (ethAmount * ethPriceInUsd).toFixed(2);
-
-    return {
-      ethAmount: ethAmount.toFixed(6),
-      usdAmount: usdAmount,
-      ethPriceInUsd: ethPriceInUsd.toFixed(2),
-    };
-  } catch (error) {
-    const errorMessage = handleContractError(error, "ETH to USD conversion");
-    throw new Error(errorMessage);
-  }
 };
 
-// Gas estimation functions with enhanced error handling
-export const estimateGasForCommitPurchase = async (
-  networkName = "hardhat",
-  amount,
-  user
-) => {
-  try {
-    if (amount > 1000) {
-      throw new Error("Amount cannot be bigger than 1000 kWh");
+// Added: Get transactions count
+export const getTransactionsCount = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        const count = await contract.getTransactionsCount();
+        return Number(count);
+    } catch (error) {
+        const errorMessage = handleContractError(error, "transactions count fetch");
+        throw new Error(errorMessage);
     }
-
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      true
-    );
-    const nonce = getNonceFromUid(user._uid);
-    const hash = getHashedCommitment(amount, nonce, user._ethereumAddress);
-
-    const gasEstimate = await contract.commitPurchase.estimateGas(hash);
-    const gasPrice = (await contract.runner.provider.getFeeData()).gasPrice;
-    const gasCostInWei = BigInt(gasEstimate) * BigInt(gasPrice);
-    const gasCostInEth = Number(ethers.formatEther(gasCostInWei)).toFixed(6);
-
-    const energyCostInEth = await getCost(amount, networkName);
-    const energyCostInWei = ethers.parseEther(energyCostInEth);
-    const totalCostInWei =
-      BigInt(Number(energyCostInWei)) + BigInt(Number(gasCostInWei));
-    const totalCostInEth = Number(ethers.formatEther(totalCostInWei)).toFixed(
-      6
-    );
-
-    return {
-      gasCostInEth,
-      energyCostInEth,
-      totalCostInEth,
-      gasEstimate: gasEstimate.toString(),
-    };
-  } catch (error) {
-    const errorMessage = handleContractError(
-      error,
-      "gas estimation for commit purchase"
-    );
-    throw new Error(errorMessage);
-  }
 };
 
-export const estimateGasForRevealPurchase = async (
-  networkName = "hardhat",
-  amount,
-  user
-) => {
-  try {
-    if (!amount || amount <= 0 || amount > 1000) {
-      throw new Error("Amount must be between 1 and 1000 kWh");
+// Added: Get contract constants
+export const getContractConstants = async (networkName = NETWORK_NAME) => {
+    try {
+        const contract = await getContract(networkName, CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        return {
+            ADD_ENERGY_DELAY: Number(await contract.ADD_ENERGY_DELAY()),
+            COMMIT_COOLDOWN: Number(await contract.COMMIT_COOLDOWN()),
+            COMMIT_REVEAL_WINDOW: Number(await contract.COMMIT_REVEAL_WINDOW()),
+            MAX_AUTHORIZED_PARTIES: Number(await contract.MAX_AUTHORIZED_PARTIES()),
+            MAX_GAS_FOR_CALL: Number(await contract.MAX_GAS_FOR_CALL()),
+            MAX_KWH_PER_PURCHASE: Number(await contract.MAX_KWH_PER_PURCHASE()),
+            PRICE_PER_KWH_USD_CENTS: Number(await contract.PRICE_PER_KWH_USD_CENTS()),
+            STALENESS_THRESHOLD: Number(await contract.STALENESS_THRESHOLD()),
+        };
+    } catch (error) {
+        const errorMessage = handleContractError(error, "contract constants fetch");
+        throw new Error(errorMessage);
     }
-    if (!user || !user._ethereumAddress) {
-      throw new Error("User Ethereum address is required");
-    }
-
-    const contract = await getContract(
-      networkName,
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      true
-    );
-    const signer = await contract.runner.provider.getSigner();
-    const signerAddress = await signer.getAddress();
-
-    if (signerAddress.toLowerCase() !== user._ethereumAddress.toLowerCase()) {
-      throw new Error(
-        "Signer address does not match provided Ethereum address"
-      );
-    }
-
-    const ethPrice = await getLatestEthPriceWC(networkName);
-    const totalCostWei = await contract.calculateRequiredPayment(
-      amount,
-      BigInt(ethPrice * 1e8)
-    );
-    const nonce = getNonceFromUid(user._uid);
-
-    const gasEstimate = await contract.revealPurchase.estimateGas(
-      amount,
-      nonce,
-      {
-        value: totalCostWei,
-      }
-    );
-
-    const feeData = await contract.runner.provider.getFeeData();
-    let gasPrice = Number(feeData.gasPrice);
-    if (!gasPrice || gasPrice === 0) {
-      gasPrice = ethers.parseUnits("10", "gwei");
-    }
-
-    const gasCostInWei = BigInt(gasEstimate) * BigInt(gasPrice);
-    const gasCostInEth = Number(ethers.formatEther(gasCostInWei)).toFixed(6);
-    const energyCostInEth = Number(ethers.formatEther(totalCostWei)).toFixed(6);
-    const totalCostInWei = totalCostWei + gasCostInWei;
-    const totalCostInEth = Number(ethers.formatEther(totalCostInWei)).toFixed(
-      6
-    );
-
-    return {
-      gasCostInEth,
-      energyCostInEth,
-      totalCostInEth,
-      gasEstimate: gasEstimate,
-    };
-  } catch (error) {
-    const errorMessage = handleContractError(
-      error,
-      "gas estimation for reveal purchase"
-    );
-    throw new Error(errorMessage);
-  }
 };
 
-// Keep existing utility functions
-export const getEthBalance = async (address, networkName = "hardhat") => {
-  try {
-    if (!ethers.isAddress(address)) {
-      throw new Error("Invalid Ethereum address");
+// Utility function
+const getHashedCommitment = (kWh, nonce, sender) => {
+    return ethers.keccak256(ethers.solidityPacked(["uint256", "uint256", "address"], [kWh, nonce, sender]));
+};
+
+export const getNonceFromUid = (uid) => {
+    if (typeof uid !== "string" || uid.length === 0) {
+        throw new Error("Invalid Firebase UID");
     }
-    const targetConfig = NETWORK_CONFIG[networkName];
-    const provider = new ethers.JsonRpcProvider(targetConfig.rpcUrl);
-    const balanceWei = await provider.getBalance(address);
-    return ethers.formatEther(balanceWei);
-  } catch (error) {
-    const errorMessage = handleContractError(error, "ETH balance fetch");
-    throw new Error(errorMessage);
-  }
-};
-
-export const isPaused = async () => {
-  try {
-    const contract = await getContract(
-      "hardhat",
-      CONTRACT_ADDRESS,
-      CONTRACT_ABI,
-      false
-    );
-    return await contract.paused();
-  } catch (error) {
-    const errorMessage = handleContractError(error, "pause status check");
-    throw new Error(errorMessage);
-  }
-};
-
-// Mock price functions for testing
-export const getMockPrice = async () => {
-  try {
-    const mockPriceContract = await getContract(
-      "hardhat",
-      MOCKP_RICE_ADDRESS,
-      MOCKPRICE_ABI,
-      false
-    );
-    return (await mockPriceContract.latestRoundData()).answer;
-  } catch (error) {
-    const errorMessage = handleContractError(error, "mock price fetch");
-    throw new Error(errorMessage);
-  }
-};
-
-export const updateAnswer = async (price, networkName = "hardhat") => {
-  try {
-    const mockPriceContract = await getContract(
-      networkName,
-      MOCKP_RICE_ADDRESS,
-      MOCKPRICE_ABI,
-      true
-    );
-    await mockPriceContract.updateAnswer(price);
-  } catch (error) {
-    const errorMessage = handleContractError(error, "mock price update");
-    throw new Error(errorMessage);
-  }
+    const hash = ethers.keccak256(ethers.toUtf8Bytes(uid));
+    const hashNumber = Number(BigInt(hash.slice(0, 10)) & BigInt(0xffffffff));
+    const nonce = 10000 + (hashNumber % 90000);
+    return nonce.toString();
 };
 
 export default {
-  // Export all functions
-  checkContractConnection,
-  getSolarFarm,
-  getLatestEthPriceWC,
-  getCost,
-  getAvailableEnergy,
-  commitPurchase,
-  revealPurchase,
-  getTransactions,
-  checkIfAuthorized,
-  addEnergy,
-  pauseContract,
-  unpauseContract,
-  authorizeParty,
-  unauthorizeParty,
-  estimateGasForCommitPurchase,
-  estimateGasForRevealPurchase,
-  getEthBalance,
-  convertEthToUsd,
-  isPaused,
-  getMockPrice,
-  updateAnswer,
-  getNonceFromUid,
+    checkContractConnection,
+    getSolarFarm,
+    getLatestEthPriceWC,
+    getLatestEthPrice,
+    getCost,
+    getAvailableEnergy,
+    commitPurchase,
+    revealPurchase,
+    getTransactions,
+    checkIfAuthorized,
+    addEnergy,
+    pauseContract,
+    unpauseContract,
+    authorizeParty,
+    unauthorizeParty,
+    estimateGasForCommitPurchase,
+    estimateGasForRevealPurchase,
+    getEthBalance,
+    convertEthToUsd,
+    isPaused,
+    setBypassStaleCheck,
+    getPriceLatestUpdate,
+    updatePaymentReceiver,
+    withdrawRefunds,
+    getAuthorizedPartyList,
+    revokeAllAuthorizations,
+    revokeAuthorizationsBatch,
+    getTransaction,
+    clearExpiredCommitment,
+    getTransactionsCount,
+    getContractConstants,
+    getNonceFromUid,
 };

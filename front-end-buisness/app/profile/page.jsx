@@ -35,7 +35,7 @@ export default function ProfilePage() {
       if (user && user.ethereumAddress) {
         try {
           setIsLoading(true);
-          const balance = await getEthBalance(user.ethereumAddress, "hardhat");
+          const balance = await getEthBalance(user.ethereumAddress, "sepolia");
           setBalance(balance);
         } catch (error) {
           console.error("Error fetching balance:", error);

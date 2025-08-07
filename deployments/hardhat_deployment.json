@@ -1,0 +1,9 @@
+{
+  "network": "hardhat",
+  "chainId": "31337",
+  "contractAddress": "0xc7b84E03054aCC854e866bD86eCb8D4C1B544f4e",
+  "priceFeedAddress": "0x694AA1769357215DE4FAC081bf1f309aDC325306",
+  "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "deploymentTime": "2025-08-07T11:10:53.925Z",
+  "blockNumber": 8931913
+}

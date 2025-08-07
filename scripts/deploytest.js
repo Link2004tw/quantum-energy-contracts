@@ -22,11 +22,20 @@ async function main() {
     //console.log("Deploying contracts with account:", deployer.address);
 
     // Deploy MockV3Aggregator for local testing
-    const priceFeedAddress = "0x694AA1769357215DE4FAC081bf1f309aDC325306";
-    //const network = await ethers.provider.getNetwork();
+    let priceFeedAddress;
+    const network = await ethers.provider.getNetwork();
+    console.log("Network chainId:", network.chainId);
+    console.log(network.toJSON());
+    // Hardhat local network
+    const MockV3Aggregator = await ethers.getContractFactory("MockV3Aggregator");
+    const mockPriceFeed = await MockV3Aggregator.deploy(8, 2000 * 10 ** 8); // 8 decimals, 2000 USD/ETH
+    await mockPriceFeed.waitForDeployment();
+    priceFeedAddress = await mockPriceFeed.getAddress();
+    //consol.log("MockV3Aggregator deployed to:", priceFeedAddress);
 
     // Deploy EnergyContract
     const EnergyContract = await ethers.getContractFactory("EnergyContract");
+    //console.log("Deploying EnergyContract...");
     const energyContract = await EnergyContract.deploy(priceFeedAddress, deployer.address, {
         gasLimit: 7000000,
     });
@@ -61,6 +70,7 @@ async function main() {
     await energyContract.connect(deployer).authorizeParty("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
     const answer = await energyContract.checkAuthState("0x70997970C51812dc3A010C7d01b50e0d17dc79C8");
     console.log(answer);
+    console.log(await mockPriceFeed.getAddress());
     console.log(await energyContract.getAddress());
 }
 
