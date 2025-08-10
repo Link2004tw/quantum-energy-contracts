@@ -27,7 +27,7 @@ async function main() {
 
     // Deploy EnergyContract
     const EnergyContract = await ethers.getContractFactory("EnergyContract");
-    const energyContract = await EnergyContract.deploy(priceFeedAddress, deployer.address, {
+    const energyContract = await EnergyContract.deploy(priceFeedAddress, "0x3998FF27EB77a6f29b4b4624d6F785264E43f5eF", {
         gasLimit: 7000000,
     });
     await energyContract.waitForDeployment();

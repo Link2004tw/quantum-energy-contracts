@@ -2,13 +2,12 @@
 // Prompt: Update contract.js to align with new EnergyContract.sol ABI, add all errors, include new functions, handle bypassStaleCheck, no ImageMessage/Firebase
 import { ethers } from "ethers";
 import CONTRACT_ABI from "../config/SolarFarmABI.json";
-import MOCKPRICE_ABI from "../config/MockPriceABI.json";
 import { Transaction } from "@/models/transaction";
 
 // Contract addresses
 //const CONTRACT_ADDRESS = "0x57ff1764F8c32FEAc3A997D7911af39becb24cD1"; // Sepolia EnergyContract
 //const MOCKPRICE_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3"; // Mock for testing
-const CONTRACT_ADDRESS = "0xAcC9a13aFf257B6A65969288D059878AeB1c289b";
+const CONTRACT_ADDRESS = "0xF9939E6600047ab1d9883A25f5301f9FB49f4aAE";
 //
 
 // Network configuration
@@ -344,7 +343,7 @@ export const addEnergy = async (kwh, networkName = NETWORK_NAME) => {
         const requestReceipt = await requestTx.wait();
         // Wait for ADD_ENERGY_DELAY
         const ADD_ENERGY_DELAY = await contract.ADD_ENERGY_DELAY(); // Changed: Query contract constant
-        alert(`Please wait ${Number(ADD_ENERGY_DELAY) / 60} seconds before confirming. Tx hash: ${requestTx.hash}`);
+        alert(`Please wait ${Number(ADD_ENERGY_DELAY) / 60} mins before confirming. Tx hash: ${requestTx.hash}`);
         await new Promise((resolve) => setTimeout(resolve, Number(ADD_ENERGY_DELAY) * 1000));
         const confirmTx = await contract.confirmAddEnergy(kwh);
         const confirmReceipt = await confirmTx.wait();

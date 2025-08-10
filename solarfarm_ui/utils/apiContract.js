@@ -8,7 +8,7 @@ import { Transaction } from "@/models/transaction";
 const NETWORK_NAME = "sepolia";
 
 // Contract addresses
-const CONTRACT_ADDRESS = "0xAcC9a13aFf257B6A65969288D059878AeB1c289b";
+const CONTRACT_ADDRESS = "0xF9939E6600047ab1d9883A25f5301f9FB49f4aAE";
 const MOCKP_RICE_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 // Network configuration
@@ -55,6 +55,11 @@ const decodeCustomError = (error) => {
 // Enhanced error handler with custom error support
 const handleContractError = (error, operation = "contract operation") => {
     console.error(`Error during ${operation}:`, error);
+
+    // Added: Check for insufficient funds error
+    if (error.code === -32000 || (error.message && error.message.includes("insufficient funds"))) {
+        return "Insufficient funds: Your wallet does not have enough ETH to cover the transaction and gas costs.";
+    }
 
     const decodedError = decodeCustomError(error);
 

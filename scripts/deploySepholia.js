@@ -53,7 +53,9 @@ async function main() {
     // Deploy EnergyContract
     const EnergyContract = await ethers.getContractFactory("EnergyContract");
     console.log("Deploying EnergyContract to Sepolia...");
-    const energyContract = await EnergyContract.deploy(priceFeedAddress, deployer.address, { gasLimit: 7000000 });
+    const energyContract = await EnergyContract.deploy(priceFeedAddress, "0x3998FF27EB77a6f29b4b4624d6F785264E43f5eF", {
+        gasLimit: 7000000,
+    });
     await energyContract.waitForDeployment();
     const contractAddress = await energyContract.getAddress();
     console.log("EnergyContract deployed to:", contractAddress);

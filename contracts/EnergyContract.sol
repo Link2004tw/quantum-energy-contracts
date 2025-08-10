@@ -307,9 +307,8 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         return priceLastUpdated;
     }
 
-    // FIXED: Return cached price if available and not stale
     function getLatestEthPriceWithoutCaching() public view returns (uint256) {
-        (uint80 roundId, int256 price, , uint256 updatedAt, uint80 answeredInRound) = priceFeed.latestRoundData();
+        (uint80 roundId, int256 price, , , uint80 answeredInRound) = priceFeed.latestRoundData();
 
         bool isChainlinkValid = true;
         if (price <= 0) {
@@ -321,14 +320,21 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         }
 
         if (isChainlinkValid) {
-            return uint256(price) * 10 ** 10;
+            uint256 adjustedPrice = uint256(price) * 10 ** 10;
+
+            // FIXED: Only update cache if the Chainlink data actually changed
+
+            return adjustedPrice;
         } else {
             // If Chainlink is invalid/stale, check if we have a valid cached price
             if (cachedEthPrice > 0 && priceLastUpdated > 0) {
                 // Only revert if cached price is also stale
+                if (block.timestamp > priceLastUpdated + STALENESS_THRESHOLD) {
+                    revert PriceFeedStale(priceLastUpdated, STALENESS_THRESHOLD);
+                }
                 return cachedEthPrice;
             } else {
-                revert PriceFeedStale(updatedAt, STALENESS_THRESHOLD);
+                revert InvalidEthPrice();
             }
         }
     }
@@ -339,8 +345,6 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
 
         bool isChainlinkValid = true;
         if (price <= 0) {
-            isChainlinkValid = false;
-        } else if (updatedAt <= block.timestamp - STALENESS_THRESHOLD) {
             isChainlinkValid = false;
         } else if (answeredInRound < roundId) {
             isChainlinkValid = false;

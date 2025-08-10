@@ -11,6 +11,8 @@ import { truncateEthereumAddress } from "@/utils/tools";
 import UnderlineButton from "../components/UI/UnderlineButton";
 import { saveData } from "@/utils/databaseUtils";
 import User from "@/models/user";
+import { auth } from "@/config/firebase";
+import AuthorizationRequest from "@/models/request";
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -50,6 +52,27 @@ export default function ProfilePage() {
         fetchBalance();
     }, [user]);
 
+    const checkAndRegisterAddress = async (ethAddress) => {
+        const token = await auth.currentUser?.getIdToken();
+        if (!token) {
+            throw new Error("No authenticated user");
+        }
+        const response = await fetch("/api/check-registered", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ address: ethAddress }),
+        });
+        const data = await response.json();
+        if (response.ok) {
+            return data;
+        } else {
+            throw new Error(data.error || "Failed to check Ethereum address");
+        }
+    };
+
     const connectWalletHandler = async () => {
         if (!window.ethereum) {
             setErrorMessage("MetaMask is not installed. Please install it to continue.");
@@ -68,8 +91,19 @@ export default function ProfilePage() {
                 password: user.password,
                 ethereumAddress: address,
             });
-            //console.log("Updated user:", updatedUser);
+            const addressCheck = await checkAndRegisterAddress(updatedUser.ethereumAddress);
             await saveData(updatedUser.toJSON(), `/users/${user._uid}`);
+
+            if (!addressCheck.exists) {
+                console.log("hi");
+                const authRequest = new AuthorizationRequest(user._uid, updatedUser._ethereumAddress, {
+                    name: updatedUser._username,
+                    email: updatedUser._email,
+                    reason: "New user signup requesting access to EnergyContract",
+                    timestamp: new Date().toISOString(),
+                });
+                await saveData(authRequest.toJSON(), `requests/${user._uid}`);
+            }
 
             alert("Wallet changed successfully");
         } catch (error) {

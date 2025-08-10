@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/Untitled.md",
+                "file": "docs/UAT.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Untitled"
+              "title": "UAT"
             }
           }
         ]
@@ -170,8 +170,8 @@
   },
   "active": "3c1cf16dd5d8f70f",
   "lastOpenFiles": [
+    "docs/UAT.md",
     "docs/DEPLOYING.md",
-    "docs/Untitled.md",
     "README.md",
     "artifacts/build-info/302e81d39cfb813561861028ff03184e.json",
     "screenshots/adminInterface/userDetailsPage.png",
