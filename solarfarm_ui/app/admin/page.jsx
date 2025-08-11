@@ -1,4 +1,5 @@
-import { getAvailableEnergy, getTransactions, getEthBalance, getSolarFarm, isPaused } from "@/utils/adminContact";
+import { getTransactions } from "@/utils/adminContact";
+import { getAvailableEnergy, getEthBalance, getSolarFarm, isPaused } from "@/utils/contractUtils";
 import TransactionList from "./orders/TransactionList";
 import ClientPrimaryButton from "./ClientPrimaryButton";
 import EnergyTransactionsList from "./energy/EnergyTransactionsList";

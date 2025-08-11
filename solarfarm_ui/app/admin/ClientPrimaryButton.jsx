@@ -1,7 +1,8 @@
 "use client";
-import { isPaused, pauseContract, unpauseContract } from "@/utils/adminContact";
+import { pauseContract, unpauseContract } from "@/utils/adminContact";
 import PrimaryButton from "../components/UI/PrimaryButton";
 import { useState } from "react";
+import { isPaused } from "@/utils/contractUtils";
 
 export default function ClientPrimaryButton({ paused }) {
     const [currState, setCurrState] = useState(paused);

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/app/store";
 import PrimaryButton from "@/app/components/UI/PrimaryButton"; //from '@/components/UI/PrimaryButton';
-import { addEnergy, getAvailableEnergy } from "@/utils/adminContact";
+import { addEnergy } from "@/utils/adminContact";
 import Card from "@/app/components/Layout/Card";
 import ProgressBar from "./ProgressBar";
 import { saveData } from "@/utils/databaseUtils";
@@ -11,6 +11,7 @@ import EnergyTransaction from "@/models/energyTransaction";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/config/firebase";
+import { getAvailableEnergy } from "@/utils/contractUtils";
 
 export default function AddEnergyPage() {
     const { user, isLoggedIn } = useAuth();

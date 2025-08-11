@@ -6,8 +6,9 @@ import { truncateEthereumAddress } from "@/utils/tools";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { authorizeParty, checkIfAuthorized, NETWORK_NAME, unauthorizeParty } from "@/utils/contract";
+import { authorizeParty, unauthorizeParty } from "@/utils/adminContact";
 import PrimaryButton from "@/app/components/UI/PrimaryButton";
+import { checkIfAuthorized } from "@/utils/contractUtils";
 
 export default function DetailsPage() {
     const { uid } = useParams();
@@ -39,10 +40,10 @@ export default function DetailsPage() {
         const address = currUser.ethereumAddress;
         try {
             if (Authorized) {
-                await unauthorizeParty(address, NETWORK_NAME);
+                await unauthorizeParty(address);
                 alert("Unautherized Successfully");
             } else {
-                await authorizeParty(address, NETWORK_NAME);
+                await authorizeParty(address);
                 alert("Autherized Successfully");
             }
             setAuthorized(await checkIfAuthorized(currUser));

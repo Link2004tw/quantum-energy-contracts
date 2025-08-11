@@ -112,44 +112,6 @@ export const revealPurchase = async (amount, user) => {
     }
 };
 
-// Get transactions
-export const getTransactions = async () => {
-    try {
-        const contract = await getContract(CONTRACT_ADDRESS, CONTRACT_ABI, false);
-        const transactionCount = await contract.transactionCount();
-        const transactionCountNum = Number(transactionCount);
-        const transactions = [];
-
-        for (let i = 0; i < transactionCountNum; i++) {
-            try {
-                const tx = await contract.transactions(i);
-                transactions.push(
-                    new Transaction({
-                        index: i,
-                        buyer: tx.buyer,
-                        kWh: tx.kWh.toString(),
-                        pricePerKWhUSD: tx.pricePerKWhUSD.toString(),
-                        ethPriceUSD: tx.ethPriceUSD.toString(),
-                        timestamp: Number(tx.timestamp),
-                    }),
-                );
-            } catch (error) {
-                console.error(`Error fetching transaction at index ${i}:`, error);
-                transactions.push(
-                    new Transaction({
-                        index: i,
-                        error: `Failed to fetch transaction ${i}`,
-                    }),
-                );
-            }
-        }
-        return transactions;
-    } catch (error) {
-        const errorMessage = handleContractError(error, "transaction fetch");
-        throw new Error(errorMessage);
-    }
-};
-
 // Convert ETH to USD
 export const convertEthToUsd = async (amount) => {
     try {
