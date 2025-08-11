@@ -8,14 +8,15 @@ import { Transaction } from "@/models/transaction";
 const NETWORK_NAME = "sepolia";
 
 // Contract addresses
-const CONTRACT_ADDRESS = "0xF9939E6600047ab1d9883A25f5301f9FB49f4aAE";
+const CONTRACT_ADDRESS = "0xF399661F462324D8f3d5726Ab3C7d743a85412f0";
 const MOCKP_RICE_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 // Network configuration
 const NETWORK_CONFIG = {
     hardhat: {
-        chainId: "31337",
-        rpcUrl: "http://192.168.1.13:8545",
+        chainId: 31337,
+        url: "http://127.0.0.1:8545",
+        rpcUrl: "http://127.0.0.1:8545",
         chainName: "Hardhat",
         currency: { name: "ETH", symbol: "ETH", decimals: 18 },
         blockExplorerUrls: [],
@@ -54,7 +55,9 @@ const decodeCustomError = (error) => {
 
 // Enhanced error handler with custom error support
 const handleContractError = (error, operation = "contract operation") => {
-    console.error(`Error during ${operation}:`, error);
+    if (operation != "refund withdrawal") {
+        console.error(`Error during ${operation}:`, error);
+    }
 
     // Added: Check for insufficient funds error
     if (error.code === -32000 || (error.message && error.message.includes("insufficient funds"))) {
@@ -228,10 +231,11 @@ export const getCost = async (amount) => {
 
         const ethPriceInUsd = await getLatestEthPriceWC();
         console.log(ethPriceInUsd);
-        const ethPrice = BigInt(Math.round(ethPriceInUsd));
-        const ethPriceScaled = ethPrice;
 
-        const priceInWei = await contract.calculateRequiredPayment(energy, ethPriceScaled * BigInt(1e8));
+        // Convert to the format expected by the contract (USD cents with proper scaling)
+        const ethPriceForContract = BigInt(Math.round(ethPriceInUsd * 1e8)); // Chainlink 8 decimal format
+
+        const priceInWei = await contract.calculateRequiredPayment(energy, ethPriceForContract);
         console.log(priceInWei);
         const priceInEth = ethers.formatUnits(priceInWei, 18);
         console.log(priceInEth);
@@ -274,9 +278,9 @@ export const commitPurchase = async (amount, user) => {
     }
 };
 
-// Enhanced revealPurchase with custom error handling
 export const revealPurchase = async (amount, user) => {
     try {
+        // Validate inputs
         if (!amount || amount <= 0 || amount > 1000) {
             throw new Error("Amount must be between 1 and 1000 kWh");
         }
@@ -284,6 +288,7 @@ export const revealPurchase = async (amount, user) => {
             throw new Error("User Ethereum address is required");
         }
 
+        // Initialize contract and signer
         const contract = await getContract(CONTRACT_ADDRESS, CONTRACT_ABI, true);
         const signer = await contract.runner.provider.getSigner();
         const signerAddress = await signer.getAddress();
@@ -292,21 +297,40 @@ export const revealPurchase = async (amount, user) => {
             throw new Error("Signer address does not match provided Ethereum address");
         }
 
-        await contract.getLatestEthPrice();
-        const ethPrice = await contract.getCachedEthPrice();
-        const totalCostWei = await contract.calculateRequiredPayment(amount, ethPrice / BigInt(10e10));
-
+        // Start listeners for relevant events
+        const ethPrice = await contract.getLatestEthPriceWithoutCaching();
+        // CHANGED: Fixed division to BigInt(10 ** 10) to match 8-decimal input for calculateRequiredPayment
+        const totalCostWei = await contract.calculateRequiredPayment(amount, ethPrice / BigInt(10 ** 10));
+        // Estimate gas
         const gasEstimate = await contract.revealPurchase.estimateGas(amount, getNonceFromUid(user._uid), {
             value: totalCostWei,
         });
 
+        // Execute revealPurchase
+        console.log("totalCostWei in ETH:", ethers.formatEther(totalCostWei));
+        console.log(`Executing revealPurchase for ${amount} kWh...`);
         const revealTx = await contract.revealPurchase(amount, getNonceFromUid(user._uid), {
             value: totalCostWei,
             gasLimit: gasEstimate,
         });
 
+        // Wait for transaction confirmation
         const receipt = await revealTx.wait();
+        console.log(`revealPurchase transaction confirmed: ${receipt.hash}`);
+
+        // Wait for events
+
+        try {
+            await contract.withdrawRefunds();
+            alert("Pending refunds withdrawn successfully");
+        } catch (withdrawError) {
+            const withdrawMessage = handleContractError(withdrawError, "refund withdrawal");
+            console.log(withdrawMessage);
+            alert(`Purchase succeeded, ${withdrawMessage}`);
+        }
         return receipt.hash;
+
+        // Return transaction hash and event data
     } catch (error) {
         const errorMessage = handleContractError(error, "purchase reveal");
         throw new Error(errorMessage);

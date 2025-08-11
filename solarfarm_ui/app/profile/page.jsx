@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useAuth } from "../store/index";
-import { checkIfAuthorized, getEthBalance } from "@/utils/apiContract";
+import { checkIfAuthorized, getEthBalance } from "@/utils/contractUtils";
 import { useRouter } from "next/navigation";
 import PrimaryButton from "../components/UI/PrimaryButton";
 import { ethers } from "ethers";
@@ -147,7 +147,9 @@ export default function ProfilePage() {
                     </p>
                     <p>
                         <span className="font-medium text-primary-600">Ethereum Balance:</span>{" "}
-                        <span className="text-secondary-900">{balance ? `${balance} ETH` : "N/A"}</span>
+                        <span className="text-secondary-900">
+                            {balance ? `${Number(balance).toFixed(4)} ETH` : "N/A"}
+                        </span>
                     </p>
                     <p>
                         <span className="font-medium text-primary-600">Energy:</span>{" "}

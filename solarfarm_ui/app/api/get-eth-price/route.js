@@ -1,6 +1,6 @@
 // Prompt: Create a Next.js API route for get-eth-price using getLatestEthPriceWC from contract.js
 import { NextResponse } from "next/server";
-import { getLatestEthPriceWC } from "@/utils/apiContract"; //from "../../../utils/contract";
+import { getLatestEthPriceWC } from "@/utils/adminContact"; //from "../../../utils/contract";
 
 // GET /api/get-eth-price
 export async function GET(request) {

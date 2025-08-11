@@ -11,7 +11,6 @@ import { getAuth, onAuthStateChanged } from "firebase/auth";
 import NavLink from "../UI/NavLink";
 import IconButton from "../UI/IconButton";
 import { auth as a } from "@/config/firebase";
-import { NETWORK_NAME } from "@/utils/contract";
 
 export default function Navbar() {
     const router = useRouter();
@@ -100,12 +99,7 @@ export default function Navbar() {
             roles: ["admin"],
             requiresAuth: true,
         },
-        {
-            href: "/admin/update-price",
-            label: "Update Price",
-            roles: ["admin"],
-            requiresAuth: true,
-        },
+
         {
             href: "/admin/users",
             label: "Manage Users",
@@ -121,13 +115,16 @@ export default function Navbar() {
     ];
 
     // Filter links based on role and authentication
-    const tempLinks =
+    // const tempLinks =
+    //     loading || !authContext.isLoggedIn
+    //         ? links.filter((link) => !link.requiresAuth)
+    //         : links.filter((link) => link.roles.includes(role));
+    // const visibleLinks =
+    //     NETWORK_NAME === "sepolia" ? tempLinks.filter((link) => link.label !== "Update Price") : tempLinks;
+    const visibleLinks =
         loading || !authContext.isLoggedIn
             ? links.filter((link) => !link.requiresAuth)
             : links.filter((link) => link.roles.includes(role));
-    const visibleLinks =
-        NETWORK_NAME === "sepolia" ? tempLinks.filter((link) => link.label !== "Update Price") : tempLinks;
-
     return (
         <nav className="flex flex-col md:flex-row rounded-md mt-0 items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-400 shadow-lg">
             <div className="flex items-center justify-between w-full md:w-auto">

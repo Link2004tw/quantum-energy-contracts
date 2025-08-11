@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/app/store";
 import PrimaryButton from "@/app/components/UI/PrimaryButton"; //from '@/components/UI/PrimaryButton';
-import { addEnergy, getAvailableEnergy } from "@/utils/contract";
+import { addEnergy, getAvailableEnergy } from "@/utils/adminContact";
 import Card from "@/app/components/Layout/Card";
 import ProgressBar from "./ProgressBar";
 import { saveData } from "@/utils/databaseUtils";

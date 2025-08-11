@@ -4,16 +4,15 @@ import React, { useEffect, useState } from "react";
 import PrimaryButton from "../components/UI/PrimaryButton";
 import Card from "../components/Layout/Card";
 import {
-    checkIfAuthorized,
     convertEthToUsd,
     getCost,
     commitPurchase,
     revealPurchase,
-    getNonceFromUid,
     estimateGasForRevealPurchase,
     estimateGasForCommitPurchase,
-    getAvailableEnergy,
-} from "../../utils/apiContract";
+} from "../../utils/userContract";
+import { checkIfAuthorized, getAvailableEnergy, getNonceFromUid } from "@/utils/contractUtils";
+
 import { useAuth } from "../store";
 import { useRouter } from "next/navigation";
 import Modal from "../components/Layout/Model";
@@ -99,7 +98,6 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
                 _uid: user._uid,
                 _ethereumAddress: user._ethereumAddress,
             });
-
             user.energy += parsedAmount;
             const order = new CommittedOrders({
                 energyRequested: parsedAmount,
@@ -130,6 +128,7 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
             // Update available energy (client-side fetch after purchase)
             try {
                 const energy = await getAvailableEnergy();
+                console.log("energy: ", energy);
                 setAvailableEnergy(energy);
             } catch (error) {
                 console.error("Error fetching available energy:", error.message);
@@ -230,7 +229,7 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
                     <label className="block label-text mb-4 text-primary text-center">
                         Amount (kWh) {availableEnergy !== null ? `(${availableEnergy} kWh available)` : ""}
                         <br />
-                        {ethUsdPrice ? `${ethUsdPrice} USD/ETH` : "Loading ETH price..."}
+                        {ethUsdPrice ? `${ethUsdPrice.toFixed(2)} USD/ETH` : "Loading ETH price..."}
                         <input
                             type="number"
                             name="amount"
