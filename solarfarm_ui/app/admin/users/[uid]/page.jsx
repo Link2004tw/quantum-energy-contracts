@@ -1,14 +1,14 @@
 "use client";
 import Card from "@/app/components/Layout/Card"; // from '@/components/UI/Card';
 import { auth } from "@/config/firebase";
-import { getData } from "@/utils/databaseUtils";
 import { truncateEthereumAddress } from "@/utils/tools";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { authorizeParty, unauthorizeParty } from "@/utils/adminContact";
 import PrimaryButton from "@/app/components/UI/PrimaryButton";
-import { checkIfAuthorized } from "@/utils/contractUtils";
+import User from "@/models/user";
+import { checkIfAuthorizedAction } from "@/app/actions/usersContractActions";
 
 export default function DetailsPage() {
     const { uid } = useParams();
@@ -19,7 +19,24 @@ export default function DetailsPage() {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const userData = await getData(`/users/${uid}`);
+                const res = await fetch("/api/get-user?uid=" + uid, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${user?.token}`,
+                    },
+                });
+                if (!res.ok) {
+                    error = "Failed to fetch user data.";
+                    console.error("Error fetching user data:", res.statusText);
+                    return;
+                }
+                const data = await res.json();
+                if (!data.success) {
+                    error = data.message || "Failed to fetch user data.";
+                    return;
+                }
+                const userData = data.user ? new User({ ...data.user }) : null;
 
                 if (!userData) {
                     alert("User data not found.");
@@ -27,7 +44,7 @@ export default function DetailsPage() {
                 }
                 //console.log(userData);
                 setCurrUser(userData);
-                setAuthorized(await checkIfAuthorized(userData));
+                setAuthorized(await checkIfAuthorizedAction(userData));
             } else {
                 setUsers(null);
             }
@@ -46,7 +63,7 @@ export default function DetailsPage() {
                 await authorizeParty(address);
                 alert("Autherized Successfully");
             }
-            setAuthorized(await checkIfAuthorized(currUser));
+            setAuthorized(await checkIfAuthorizedAction(currUser));
         } catch (error) {
             console.log(error);
         }

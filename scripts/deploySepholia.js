@@ -184,9 +184,11 @@ async function main() {
     const solarFarmAddress = "0x3998FF27EB77a6f29b4b4624d6F785264E43f5eF";
 
     // CHANGED: Deploy with explicit gas limit to avoid HH605
+    const testerAddress = "0x2226261b197522D0904fF3D326b43051E1494927";
+
     const EnergyContract = await ethers.getContractFactory("EnergyContract");
     console.log("Deploying EnergyContract to Sepolia fork...");
-    const energyContract = await EnergyContract.deploy(priceFeedAddress, solarFarmAddress, {
+    const energyContract = await EnergyContract.deploy(priceFeedAddress, solarFarmAddress, testerAddress, {
         gasLimit: 7000000,
     });
     await energyContract.waitForDeployment();
@@ -244,6 +246,7 @@ async function main() {
         const authTx = await energyContract.connect(deployer).authorizeParty(testAddress, { gasLimit: 200000 });
         await authTx.wait();
         const isAuthorized = await energyContract.checkAuthState(testAddress);
+
         console.log("Authorization state for", testAddress, ":", isAuthorized);
     } catch (error) {
         console.error("Authorization failed:", error.message);

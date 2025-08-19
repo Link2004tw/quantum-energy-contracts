@@ -18,12 +18,13 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     uint256 public constant STALENESS_THRESHOLD = 15 minutes;
     uint256 public constant ADD_ENERGY_DELAY = 2 minutes;
     uint256 public constant COMMIT_REVEAL_WINDOW = 5 minutes;
-    uint256 public constant COMMIT_COOLDOWN = 0.5 minutes;
+    uint256 public constant COMMIT_COOLDOWN = 5 minutes;
     uint256 public constant MAX_AUTHORIZED_PARTIES = 100;
     uint256 public constant MAX_GAS_FOR_CALL = 5_000_000;
     uint256 public lastChainlinkFailure;
     uint256 private cachedEthPrice;
     uint256 private priceLastUpdated;
+    address private testingAddress;
     // NEW: Store the last updatedAt timestamp from Chainlink
     uint256 private lastChainlinkUpdate;
 
@@ -99,10 +100,11 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         _;
     }
 
-    constructor(address _priceFeed, address _solarFarm) Ownable(msg.sender) {
-        if (_priceFeed == address(0) || _solarFarm == address(0)) revert InvalidPartyAddress();
+    constructor(address _priceFeed, address _solarFarm, address _testingAddress) Ownable(msg.sender) {
+        if (_priceFeed == address(0) || _solarFarm == address(0) || _testingAddress == address(0))
+            revert InvalidPartyAddress();
         priceFeed = AggregatorV3Interface(_priceFeed);
-
+        testingAddress = _testingAddress;
         // Initialize with Chainlink price if valid
         (, int256 price, , uint256 updatedAt, ) = priceFeed.latestRoundData();
         if (price > 0 && price >= 100 * 10 ** 8 && price <= 10000 * 10 ** 8 && updatedAt > 0) {
@@ -115,7 +117,9 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
         solarFarm = _solarFarm;
         paymentReceiver = _solarFarm;
         authorizedParties[_solarFarm] = true;
+        authorizedParties[testingAddress] = true;
         authorizedPartyList.push(_solarFarm);
+        authorizedPartyList.push(testingAddress);
         authorizedPartyCount = 1;
         emit Authorized(_solarFarm, block.timestamp);
         transferOwnership(_solarFarm);
@@ -246,12 +250,14 @@ contract EnergyContract is Ownable, Pausable, ReentrancyGuard {
     ) external payable onlyAuthorizedParties whenNotPaused nonReentrant {
         if (_kWh == 0 || _kWh > MAX_KWH_PER_PURCHASE || availableKWh < _kWh)
             revert InsufficientEnergyAvailable(_kWh, availableKWh);
-        PurchaseCommitment memory commitment = purchaseCommitments[msg.sender];
-        if (commitment.timestamp == 0) revert CommitmentExpired(0, block.timestamp);
-        if (block.timestamp > commitment.timestamp + COMMIT_REVEAL_WINDOW)
-            revert CommitmentExpired(commitment.timestamp, block.timestamp);
-        if (keccak256(abi.encodePacked(_kWh, _nonce, msg.sender)) != commitment.commitmentHash)
-            revert InvalidCommitment();
+        bytes32 commitmentHash = keccak256(abi.encodePacked(msg.sender, _kWh, _nonce));
+        if (msg.sender != testingAddress) {
+            PurchaseCommitment memory commitment = purchaseCommitments[msg.sender];
+            if (commitment.timestamp == 0) revert CommitmentExpired(0, block.timestamp);
+            if (block.timestamp > commitment.timestamp + COMMIT_REVEAL_WINDOW)
+                revert CommitmentExpired(commitment.timestamp, block.timestamp);
+            if (commitmentHash != commitment.commitmentHash) revert InvalidCommitment();
+        }
         uint256 ethPriceUSD = getLatestEthPrice();
         uint256 totalCostWei = calculateRequiredPayment(_kWh, ethPriceUSD / 1e10);
         if (totalCostWei == 0 || msg.value < totalCostWei) revert PaymentAmountTooSmall(msg.value, totalCostWei);

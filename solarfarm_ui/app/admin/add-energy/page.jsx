@@ -2,16 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/app/store";
-import PrimaryButton from "@/app/components/UI/PrimaryButton"; //from '@/components/UI/PrimaryButton';
-import { addEnergy } from "@/utils/adminContact";
+import PrimaryButton from "@/app/components/UI/PrimaryButton";
 import Card from "@/app/components/Layout/Card";
 import ProgressBar from "./ProgressBar";
-import { saveData } from "@/utils/databaseUtils";
-import EnergyTransaction from "@/models/energyTransaction";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/config/firebase";
-import { getAvailableEnergy } from "@/utils/contractUtils";
+import { addEnergy } from "@/utils/adminContact";
+import { saveEnergy } from "../AdminActions";
 
 export default function AddEnergyPage() {
     const { user, isLoggedIn } = useAuth();
@@ -20,11 +18,35 @@ export default function AddEnergyPage() {
     const [availableEnergy, setAvailableEnergy] = useState(0);
     const router = useRouter();
     const fetchEnergy = async () => {
-        setAvailableEnergy(await getAvailableEnergy());
+        const token = await auth.currentUser?.getIdToken();
+        const response = await fetch("/api/send-energy-data", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        if (!response.ok) {
+            console.error("Failed to fetch available energy:", response.statusText);
+            return;
+        }
+        const data = await response.json();
+        if (data.error) {
+            console.error("Error fetching energy data:", data.error);
+            return;
+        }
+
+        setAvailableEnergy(data.energy || 0);
     };
     useEffect(() => {
-        fetchEnergy();
-    }, []);
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                router.push("/login");
+            }
+            await fetchEnergy();
+        });
+        return () => unsubscribe();
+    }, [auth]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -39,14 +61,11 @@ export default function AddEnergyPage() {
 
             const { requestTxHash, confirmTxHash } = await addEnergy(energyAmount);
 
-            const transaction = new EnergyTransaction({
-                energyAmountKwh: energyAmount,
-                reqHash: requestTxHash,
-                conHash: confirmTxHash,
-            });
-
-            await saveData(transaction, `/energyTransactions/${transaction.transactionId}`);
-
+            //alert(`Energy addition confirmed! Request Tx: ${requestTxHash}, Confirm Tx: ${confirmTxHash}`);
+            const response = await saveEnergy(energyAmount, requestTxHash, confirmTxHash);
+            if (!response.success) {
+                throw new Error(response.message || "Failed to save energy transaction.");
+            }
             setKwh("");
             alert("Energy transaction saved successfully!");
         } catch (error) {

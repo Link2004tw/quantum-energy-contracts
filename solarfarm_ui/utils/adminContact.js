@@ -1,29 +1,25 @@
 // Modified adminContract.js to import common utilities from contractUtils.js
 import {
     CONTRACT_ADDRESS,
-    MOCKP_RICE_ADDRESS,
     getContract,
     handleContractError,
     getSolarFarm,
     getLatestEthPriceWC,
-    getAvailableEnergy,
-    checkIfAuthorized,
-    getEthBalance,
     isPaused,
-    getMockPrice,
     getNonceFromUid,
     checkContractConnection,
 } from "./contractUtils";
 
 import CONTRACT_ABI from "../config/SolarFarmABI.json";
-import MOCKPRICE_ABI from "../config/MockPriceABI.json";
+//import MOCKPRICE_ABI from "../config/MockPriceABI.json";
 import { ethers } from "ethers";
+import { Transaction } from "@/models/transaction";
 
 // Enhanced addEnergy with custom error handling
 export const addEnergy = async (kwh) => {
     try {
         if (!kwh || kwh <= 0 || kwh > 1000) {
-            alert("kWh must be between 1 and 1000");
+            //alert("kWh must be between 1 and 1000");
             throw new Error("kWh must be between 1 and 1000");
         }
 
@@ -119,15 +115,15 @@ export const unpauseContract = async () => {
 };
 
 // Mock price update function for testing
-export const updateAnswer = async (price) => {
-    try {
-        const mockPriceContract = await getContract(MOCKP_RICE_ADDRESS, MOCKPRICE_ABI, true);
-        await mockPriceContract.updateAnswer(price);
-    } catch (error) {
-        const errorMessage = handleContractError(error, "mock price update");
-        throw new Error(errorMessage);
-    }
-};
+// export const updateAnswer = async (price) => {
+//     try {
+//         const mockPriceContract = await getContract(MOCKP_RICE_ADDRESS, MOCKPRICE_ABI, true);
+//         await mockPriceContract.updateAnswer(price);
+//     } catch (error) {
+//         const errorMessage = handleContractError(error, "mock price update");
+//         throw new Error(errorMessage);
+//     }
+// };
 export const getTransactions = async () => {
     try {
         const contract = await getContract(CONTRACT_ADDRESS, CONTRACT_ABI, false);
@@ -172,14 +168,9 @@ export default {
     unauthorizeParty,
     pauseContract,
     unpauseContract,
-    updateAnswer,
     checkContractConnection,
     getSolarFarm,
     getLatestEthPriceWC,
-    getAvailableEnergy,
-    checkIfAuthorized,
-    getEthBalance,
     isPaused,
-    getMockPrice,
     getNonceFromUid,
 };

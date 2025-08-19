@@ -1,24 +1,15 @@
-// asked Grok to refactor some code
-import { get, ref, set } from "firebase/database";
-import { database as db, auth } from "@/config/firebase";
+import { adminDatabase as db } from "@/config/adminfirebase";
+import { get, ref, set } from "@firebase/database";
+
 export const getData = async (url) => {
     try {
         // Check if user is authenticated
-
-        const user = auth.currentUser;
-
-        //const adminUser = adminAuth.getUser()
-        //console.log(adminUser);
-        if (!user) {
-            throw new Error("User not authenticated");
-        }
 
         // Validate the URL
         if (!url || typeof url !== "string" || url.trim() === "") {
             throw new Error("Invalid or empty URL path");
         }
 
-        // Optionally, append user UID to the path for user-specific data
         const dataRef = ref(db, `${url}`);
 
         // Fetch the data
@@ -37,12 +28,6 @@ export const getData = async (url) => {
 
 export const saveData = async (data, url) => {
     try {
-        // Check if user is authenticated
-        const user = auth.currentUser;
-        if (!user) {
-            throw new Error("User not authenticated");
-        }
-
         // Validate inputs
         if (!url || typeof url !== "string" || url.trim() === "") {
             throw new Error("Invalid or empty URL path");

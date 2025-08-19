@@ -8,7 +8,6 @@ import { auth } from "../../config/firebase";
 import User from "../../models/user";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../store";
-import { getData } from "@/utils/databaseUtils";
 import { useEffect } from "react";
 
 export default function LoginPage() {
@@ -27,11 +26,11 @@ export default function LoginPage() {
             const firebaseUser = userCredentials.user;
             const uid = firebaseUser.uid;
             const token = await firebaseUser.getIdToken();
-
             const loginResponse = await fetch("/api/login", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
                 },
                 body: JSON.stringify({ idToken: token }),
             });
@@ -39,8 +38,24 @@ export default function LoginPage() {
             if (!loginResponse.ok) {
                 throw new Error("Failed to set session cookie");
             }
-
-            const userData = await getData(`users/${uid}`);
+            const res = await fetch("/api/get-user?uid=" + uid, {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+            });
+            if (!res.ok) {
+                error = "Failed to fetch user data.";
+                console.error("Error fetching user data:", res.statusText);
+                return;
+            }
+            const data = await res.json();
+            if (!data.success) {
+                error = data.message || "Failed to fetch user data.";
+                return;
+            }
+            const userData = data.user ? new User({ ...data.user }) : null;
 
             if (!userData) {
                 alert("User data not found.");

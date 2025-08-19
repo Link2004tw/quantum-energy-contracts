@@ -1,27 +1,27 @@
-// Prompt: Update BuySolarPage to receive ethPrice and availableEnergy as props
 "use client";
 import React, { useEffect, useState } from "react";
 import PrimaryButton from "../components/UI/PrimaryButton";
 import Card from "../components/Layout/Card";
+import { commitPurchase, revealPurchase } from "../../utils/userContract";
+
+// Import server actions
 import {
-    convertEthToUsd,
-    getCost,
-    commitPurchase,
-    revealPurchase,
-    estimateGasForRevealPurchase,
-    estimateGasForCommitPurchase,
-} from "../../utils/userContract";
-import { checkIfAuthorized, getAvailableEnergy, getNonceFromUid } from "@/utils/contractUtils";
+    checkIfAuthorizedAction,
+    convertEthToUsdAction,
+    estimateCommitmentGas,
+    estimateRevealGas,
+    saveOrderToFirebase,
+} from "@/app/actions/usersContractActions"; // Update this path
 
 import { useAuth } from "../store";
 import { useRouter } from "next/navigation";
 import Modal from "../components/Layout/Model";
 import CommittedOrders from "@/models/commitedOrders";
-import { saveData } from "@/utils/databaseUtils";
 import { ethers } from "ethers";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/config/firebase";
 import { truncateTransactionHash } from "@/utils/tools";
+import CooldownTimer from "./Timer";
 
 export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, initialError }) {
     const router = useRouter();
@@ -35,20 +35,45 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
     const [ethUsdPrice, setEthUsdPrice] = useState(initialEthPrice);
     const [commitingModalOpen, setCommitingModalOpen] = useState(false);
     const [committingHash, setCommitingHash] = useState(null);
-
+    const [loading, setLoading] = useState(false);
+    const [csrfToken, setCsrfToken] = useState(null);
+    const [commitCooldownTimestamp, setCommitCooldownTimestamp] = useState(null);
     const { user } = useAuth();
+
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (user) => {
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (!user) {
                 router.push("/login");
+            }
+            try {
+                const idToken = await user.getIdToken();
+                const response = await fetch("/api/generate-token", {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${idToken}`, // Pass the token if needed
+                    },
+                });
+                const { token } = await response.json();
+                setCsrfToken(token);
+            } catch (error) {
+                console.error("Error fetching CSRF token:", error);
             }
         });
         return () => unsubscribe();
     }, [user]);
 
+    // Added: Check if cooldown is active
+    const isCooldownActive = () => {
+        if (!commitCooldownTimestamp) return false;
+        const COOLDOWN_PERIOD_MS = 5 * 60 * 1000; // 5 minutes
+        return Date.now() < commitCooldownTimestamp + COOLDOWN_PERIOD_MS;
+    };
+
     const handleCancelPurchase = () => {
         setModalOpen(false);
         setPendingPurchase(null);
+        setCommitCooldownTimestamp(null); // Added: Clear cooldown on cancel
         setAmount("");
     };
 
@@ -68,6 +93,7 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
         setCommitingModalOpen(false);
         const { parsedAmount, priceEth, commitTimestamp, commitGasCost } = pendingPurchase;
         setError(null);
+        setLoading(true);
 
         try {
             // Check if commitment has expired (5 minutes = 300,000 ms)
@@ -77,12 +103,21 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
                 throw new Error("Purchase commitment has expired (5-minute window exceeded)");
             }
 
-            // Use nonce from getNonceFromUid
-            const nonce = getNonceFromUid(user._uid);
+            // Use server action to estimate gas for reveal purchase
+            const formData = new FormData();
+            formData.append("amount", parsedAmount.toString());
+            formData.append("userUid", user._uid);
+            formData.append("userEthereumAddress", user._ethereumAddress);
+            formData.append("csrfToken", csrfToken); // Added: Include CSRF token
 
-            const gasCostForReveal = await estimateGasForRevealPurchase(parsedAmount, user);
-            const { gasCostInEth, energyCostInEth, totalCostInEth } = gasCostForReveal;
-            const { ethAmount, usdAmount } = await convertEthToUsd(gasCostInEth);
+            const gasEstimationResult = await estimateRevealGas(formData);
+
+            if (!gasEstimationResult.success) {
+                throw new Error(`Gas estimation failed: ${gasEstimationResult.error}`);
+            }
+
+            const { gasCostInEth, energyCostInEth, totalCostInEth } = gasEstimationResult.data;
+            const { ethAmount, usdAmount } = await convertEthToUsdAction(gasCostInEth);
 
             const confirmation = window.confirm(
                 `Energy Cost: ${energyCostInEth} ETH\n` +
@@ -91,14 +126,19 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
                     `Proceed with transaction? (As of ${new Date().toLocaleString("en-US", { timeZone: "Europe/Bucharest" })})`,
             );
 
-            if (!confirmation) return;
+            if (!confirmation) {
+                setLoading(false);
+                return;
+            }
 
-            // Call revealPurchase
-            const txHash = await revealPurchase(parsedAmount, {
+            // Call revealPurchase (still using client-side for actual transaction)
+            const { txHash, nonce } = await revealPurchase(parsedAmount, {
                 _uid: user._uid,
                 _ethereumAddress: user._ethereumAddress,
             });
+
             user.energy += parsedAmount;
+
             const order = new CommittedOrders({
                 energyRequested: parsedAmount,
                 transactionHash: txHash,
@@ -107,10 +147,19 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
                 nonce: nonce,
                 createdAt: new Date().toISOString(),
             });
-
-            // Save to Firebase using saveData
-            await saveData(order.toFirebase(), `committedOrders/${user._uid}/${txHash}`);
-            await saveData(user.toJSON(), `users/${user._uid}`);
+            const idToken = await auth.currentUser.getIdToken();
+            const res = await fetch("/api/send-energy-data", {
+                method: "POST",
+                headers: {
+                    authorization: `Bearer ${idToken}`,
+                    applicationType: "application/json",
+                },
+            });
+            const data = await res.json();
+            //console.log("send energy data response: ", data);
+            setAvailableEnergy(data.energy);
+            setEthUsdPrice(data.ethPrice);
+            await saveOrderToFirebase(order.toFirebase(), user.toJSON(), csrfToken);
 
             // Show success modal
             setSuccessDetails({
@@ -124,49 +173,52 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
 
             setAmount("");
             setPendingPurchase(null);
-
-            // Update available energy (client-side fetch after purchase)
-            try {
-                const energy = await getAvailableEnergy();
-                console.log("energy: ", energy);
-                setAvailableEnergy(energy);
-            } catch (error) {
-                console.error("Error fetching available energy:", error.message);
-            }
         } catch (err) {
             console.error("Error revealing purchase:", err);
             setError(err.message);
             setSuccessModalOpen(true);
             setCommitingModalOpen(false);
             setSuccessDetails({ error: err.message });
+        } finally {
+            setLoading(false);
         }
     };
 
     const commitPurchaseHandler = async (e) => {
         e.preventDefault();
         setError(null);
+        setLoading(true);
+
         if (!window.ethereum) {
             alert("Metamask is not installed please install it ");
+            setLoading(false);
             return;
         }
+
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const accounts = await provider.send("eth_requestAccounts", []);
             const address = accounts[0];
             if (address.toLowerCase() !== user._ethereumAddress.toLowerCase()) {
                 alert("Please use your registered wallet!");
+                setLoading(false);
                 return;
             }
         } catch (error) {
             console.error("Error connecting to MetaMask:", error);
+            setLoading(false);
+            return;
         }
+
         try {
             // Check authorization
             console.log("checking is authorized");
-            const isAuthorized = await checkIfAuthorized(user);
+
+            const isAuthorized = await checkIfAuthorizedAction({ ...user });
 
             if (!isAuthorized) {
                 alert("You are not Authorized please wait till the admin authorizes your wallet");
+                setLoading(false);
                 return;
             }
 
@@ -175,20 +227,30 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
                 throw new Error("Amount must be a number between 1 and 1000 kWh");
             }
 
-            const priceEth = await getCost(parsedAmount);
-            console.log(priceEth);
-            const gasCostForCommitment = await estimateGasForCommitPurchase(parsedAmount, user);
-            console.log(gasCostForCommitment);
-            const { gasCostInEth, energyCostInEth, totalCostInEth } = gasCostForCommitment;
-            console.log(gasCostInEth);
-            const gasCostForCommitmentUsd = await convertEthToUsd(gasCostInEth);
+            // Use server action to estimate gas for commitment
+            console.log("token", csrfToken);
+            const formData = new FormData();
+            formData.append("amount", parsedAmount.toString());
+            formData.append("userUid", user._uid);
+            formData.append("userEthereumAddress", user._ethereumAddress);
+            formData.append("csrfToken", csrfToken); // Added: Include CSRF token
+            const gasEstimationResult = await estimateCommitmentGas(formData);
+
+            if (!gasEstimationResult.success) {
+                throw new Error(`Gas estimation failed: ${gasEstimationResult.error}`);
+            }
+
+            const { gasCostInEth, energyCostInEth, totalCostInEth } = gasEstimationResult.data;
+            console.log("Gas estimation result:", gasEstimationResult.data);
+
+            const gasCostForCommitmentUsd = await convertEthToUsdAction(gasCostInEth);
             const usdCost = gasCostForCommitmentUsd.usdAmount;
             const ethCost = gasCostForCommitmentUsd.ethAmount;
 
             // Store commitment details with timestamp
             setPendingPurchase({
                 parsedAmount,
-                priceEth,
+                energyCostInEth,
                 commitTimestamp: Date.now(),
                 commitGasCostUsd: usdCost,
                 commitGasCostEth: ethCost,
@@ -199,17 +261,26 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
             setError(err.message);
             setSuccessModalOpen(true);
             setSuccessDetails({ error: err.message });
+        } finally {
+            setLoading(false);
         }
     };
 
     const confirmCommitHandler = async () => {
+        setLoading(true);
         try {
             setModalOpen(false);
             const parsedAmount = parseInt(amount);
+            console.log("Committing purchase with amount:", parsedAmount);
+            console.log({
+                _uid: user._uid,
+                _ethereumAddress: user._ethereumAddress,
+            });
             const hash = await commitPurchase(parsedAmount, {
                 _uid: user._uid,
                 _ethereumAddress: user._ethereumAddress,
             });
+            setCommitCooldownTimestamp(Date.now());
             setCommitingHash(hash);
             setCommitingModalOpen(true);
         } catch (err) {
@@ -218,6 +289,8 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
             setError(err.message);
             setSuccessModalOpen(true);
             setSuccessDetails({ error: err.message });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -239,14 +312,29 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
                             min="1"
                             max="1000"
                             step="1"
-                            className="block mt-2 my-4 px-2 py-1 text-center rounded-sm w-full"
+                            disabled={loading || isCooldownActive()}
+                            className="block mt-2 my-4 px-2 py-1 text-center rounded-sm w-full disabled:opacity-50"
                         />
                     </label>
                     <div className="flex justify-center">
-                        <PrimaryButton title="Buy Solar Energy" type="submit" onClick={commitPurchaseHandler} />
+                        <PrimaryButton
+                            title={loading ? "Processing..." : "Buy Solar Energy"}
+                            type="submit"
+                            onClick={commitPurchaseHandler}
+                            disabled={loading}
+                        />
                     </div>
                 </form>
+                <CooldownTimer commitTimestamp={commitCooldownTimestamp} />
             </Card>
+
+            {/* Loading indicator */}
+            {loading && (
+                <div className="mt-4 text-center text-gray-600">
+                    <p>Processing transaction... Please wait.</p>
+                </div>
+            )}
+
             <Modal
                 isOpen={modalOpen}
                 onClose={handleCancelPurchase}

@@ -36,7 +36,7 @@ export class Transaction {
 
     // Get formatted ETH price (assuming 8 decimals from Chainlink)
     getFormattedEthPrice() {
-        console.log(this.ethPriceUSD);
+        //console.log(this.ethPriceUSD);
         if (this.hasError()) return "N/A";
         return `$${(Number(this.ethPriceUSD) / 1e18).toFixed(2)}`;
     }

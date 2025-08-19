@@ -3,7 +3,6 @@
 import { auth } from "@/config/firebase";
 import DetailsList from "./DetailsList"; //from '@/components/UI/DetailsList';
 //import User from "@/models/user";
-import { getData } from "@/utils/databaseUtils";
 import { onAuthStateChanged } from "firebase/auth";
 import { useEffect, useState } from "react";
 import User from "@/models/user";
@@ -17,16 +16,26 @@ export default function UsersPage() {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const usersData = await getData("/users");
-                const usersArray = Object.keys(usersData || {}).map((uid) => {
-                    const data = usersData[uid];
+                const response = await fetch("/api/admin/get-users", {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${user?.token}`,
+                    },
+                });
+                if (!response.ok) {
+                    error = "Failed to fetch users.";
+                    setUsers(null);
+                    return;
+                }
+                const usersData = await response.json();
+                const usersArray = usersData.map((userData) => {
                     return new User({
-                        email: data.email || "",
-                        username: data.username || "",
-                        ethereumAddress: data.ethereumAddress || null,
-                        uid,
-                        energy: data.energy || 0,
-                        token: data.token || null,
+                        email: userData.email || "",
+                        username: userData.username || "",
+                        ethereumAddress: userData.ethereumAddress || null,
+                        uid: userData.uid,
+                        energy: userData.energy || 0,
                     });
                 });
 

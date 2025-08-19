@@ -1,15 +1,12 @@
 // Common utility functions and configurations for adminContract.js and userContract.js
 import { ethers } from "ethers";
 import CONTRACT_ABI from "../config/SolarFarmABI.json";
-import MOCKPRICE_ABI from "../config/MockPriceABI.json";
-//import { Transaction } from "@/models/transaction";
 
 // Global network name constant
 export const NETWORK_NAME = "sepolia";
 
 // Contract addresses
-export const CONTRACT_ADDRESS = "0xF399661F462324D8f3d5726Ab3C7d743a85412f0";
-export const MOCKP_RICE_ADDRESS = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+export const CONTRACT_ADDRESS = "0x5699F43e635C35A33051e64ecbB5c8245241Bc2F";
 
 // Network configuration
 export const NETWORK_CONFIG = {
@@ -262,12 +259,13 @@ export const getAvailableEnergy = async () => {
 };
 
 export const checkIfAuthorized = async (user) => {
+    //console.log("Checking authorization for user:", user);
     try {
-        if (!user || !user.ethereumAddress) {
+        if (!user || !user._ethereumAddress) {
             throw new Error("User is not authenticated or does not have an Ethereum address.");
         }
-        const contract = await getContract(CONTRACT_ADDRESS, CONTRACT_ABI, true);
-        return await contract.checkAuthState(user.ethereumAddress);
+        const contract = await getContract(CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        return await contract.checkAuthState(user._ethereumAddress);
     } catch (error) {
         const errorMessage = handleContractError(error, "authorization check");
         throw new Error(errorMessage);
@@ -288,7 +286,51 @@ export const getEthBalance = async (address) => {
         throw new Error(errorMessage);
     }
 };
+export const convertEthToUsd = async (amount) => {
+    try {
+        const ethAmount = Number(amount);
+        console.log(ethAmount);
+        if (isNaN(ethAmount)) {
+            throw new Error("ETH amount must be a valid number greater than zero");
+        }
 
+        const ethPriceInUsd = await getLatestEthPriceWC();
+        const usdAmount = (ethAmount * ethPriceInUsd).toFixed(2);
+
+        return {
+            ethAmount: ethAmount.toFixed(6),
+            usdAmount: usdAmount,
+            ethPriceInUsd: ethPriceInUsd.toFixed(2),
+        };
+    } catch (error) {
+        const errorMessage = handleContractError(error, "ETH to USD conversion");
+        throw new Error(errorMessage);
+    }
+};
+
+export const getCost = async (amount) => {
+    try {
+        const contract = await getContract(CONTRACT_ADDRESS, CONTRACT_ABI, false);
+        const energy = Number(amount);
+
+        if (isNaN(energy) || energy <= 0) {
+            throw new Error("Energy amount must be a valid number greater than zero");
+        }
+
+        const ethPriceInUsd = await getLatestEthPriceWC();
+        console.log(ethPriceInUsd);
+
+        const ethPriceForContract = BigInt(Math.round(ethPriceInUsd * 1e8));
+        const priceInWei = await contract.calculateRequiredPayment(energy, ethPriceForContract);
+        console.log(priceInWei);
+        const priceInEth = ethers.formatUnits(priceInWei, 18);
+        console.log(priceInEth);
+        return Number(priceInEth).toFixed(6);
+    } catch (error) {
+        const errorMessage = handleContractError(error, "cost calculation");
+        throw new Error(errorMessage);
+    }
+};
 export const isPaused = async () => {
     try {
         const contract = await getContract(CONTRACT_ADDRESS, CONTRACT_ABI, false);
@@ -299,20 +341,40 @@ export const isPaused = async () => {
     }
 };
 
-export const getMockPrice = async () => {
-    try {
-        const mockPriceContract = await getContract(MOCKP_RICE_ADDRESS, MOCKPRICE_ABI, false);
-        return (await mockPriceContract.latestRoundData()).answer;
-    } catch (error) {
-        const errorMessage = handleContractError(error, "mock price fetch");
-        throw new Error(errorMessage);
-    }
-};
+// export const getMockPrice = async () => {
+//     try {
+//         const mockPriceContract = await getContract(MOCKP_RICE_ADDRESS, MOCKPRICE_ABI, false);
+//         return (await mockPriceContract.latestRoundData()).answer;
+//     } catch (error) {
+//         const errorMessage = handleContractError(error, "mock price fetch");
+//         throw new Error(errorMessage);
+//     }
+// };
 
 // Utility functions
+
+// Prompt: Fix getHashedCommitment to match contract's keccak256(abi.encodePacked(msg.sender, _kWh, _nonce))
+// Changes:
+// - Changed parameter order to ["address", "uint256", "uint256"] to match contract
+// - Ensured inputs are validated for correct types
+
 export const getHashedCommitment = (kWh, nonce, sender) => {
-    return ethers.keccak256(ethers.solidityPacked(["uint256", "uint256", "address"], [kWh, nonce, sender]));
+    if (!ethers.isAddress(sender)) {
+        throw new Error("Invalid sender address");
+    }
+    if (!Number.isInteger(Number(kWh)) || Number(kWh) <= 0) {
+        throw new Error("Invalid kWh value");
+    }
+    if (!Number.isInteger(Number(nonce))) {
+        throw new Error("Invalid nonce value");
+    }
+    return ethers.keccak256(ethers.solidityPacked(["address", "uint256", "uint256"], [sender, kWh, nonce]));
 };
+
+// Prompt: Update getNonceFromUid to return a number for consistency with contract's uint256
+// Changes:
+// - Changed nonce.toString() to return nonce as a number
+// - Added validation for UID input
 
 export const getNonceFromUid = (uid) => {
     if (typeof uid !== "string" || uid.length === 0) {
@@ -321,5 +383,5 @@ export const getNonceFromUid = (uid) => {
     const hash = ethers.keccak256(ethers.toUtf8Bytes(uid));
     const hashNumber = Number(BigInt(hash.slice(0, 10)) & BigInt(0xffffffff));
     const nonce = 10000 + (hashNumber % 90000);
-    return nonce.toString();
+    return nonce; // Return as number
 };

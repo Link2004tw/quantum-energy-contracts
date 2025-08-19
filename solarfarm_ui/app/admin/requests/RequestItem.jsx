@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import AuthorizationRequest from "@/models/request";
-import { saveData } from "@/utils/databaseUtils";
 import { authorizeParty } from "@/utils/adminContact";
+import { truncateEthereumAddress } from "@/utils/tools";
+import { saveRequest } from "../AdminActions";
 
 export default function RequestItem({ request }) {
     const [status, setStatus] = useState(request.status || "pending");
@@ -23,7 +24,7 @@ export default function RequestItem({ request }) {
 
             // Update status in Firebase
             authRequest.updateStatus("approved");
-            await saveData(authRequest.toJSON(), `requests/${request.userId}`);
+            await saveRequest(authRequest.toJSON());
             setStatus("approved");
             alert("User authorized successfully!");
         } catch (error) {
@@ -49,7 +50,7 @@ export default function RequestItem({ request }) {
 
             // Update status in Firebase
             authRequest.updateStatus("rejected");
-            await saveData(authRequest.toJSON(), `requests/${request.userId}`);
+            await saveRequest(authRequest.toJSON());
             setStatus("rejected");
             alert("Request rejected successfully!");
         } catch (error) {
@@ -69,7 +70,7 @@ export default function RequestItem({ request }) {
                     <strong>User ID:</strong> {request.userId}
                 </p>
                 <p>
-                    <strong>Ethereum Address:</strong> {request.ethereumAddress}
+                    <strong>Ethereum Address:</strong> {truncateEthereumAddress(request.ethereumAddress)}
                 </p>
                 <p>
                     <strong>Name:</strong> {request.metadata.name}

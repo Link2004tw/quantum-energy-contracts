@@ -1,6 +1,6 @@
 // Prompt: Create a Next.js server component to fetch ethPrice and availableEnergy and pass to BuySolarPage
 import { getLatestEthPriceWC, getAvailableEnergy } from "@/utils/contractUtils";
-import BuySolarPage from "./BuySolarPage";
+import BuySolarPage from "./BuySolarPageActions";
 
 export default async function BuySolarServerPage() {
     let ethPrice = null;

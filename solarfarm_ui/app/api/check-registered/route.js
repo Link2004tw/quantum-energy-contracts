@@ -1,5 +1,6 @@
 // Prompt: Fix error "set failed: value argument contains undefined in property 'registeredAddresses.1'" by filtering undefined/invalid values in existingAddresses
-import { adminAuth, adminDatabase } from "@/config/adminfirebase"; // Adjust path to your Firebase Admin config
+import { adminDatabase } from "@/config/adminfirebase"; // Adjust path to your Firebase Admin config
+import { validateAuthToken } from "../utils";
 
 // Simple Ethereum address validation
 const isValidEthereumAddress = (address) => {
@@ -9,15 +10,13 @@ const isValidEthereumAddress = (address) => {
 export async function POST(req) {
     // Extract the Authorization header
     const authHeader = req.headers.get("authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        return new Response(JSON.stringify({ error: "Unauthorized: Missing or invalid token" }), {
-            status: 401,
+    const response = await validateAuthToken(authHeader);
+    if (response.status !== 200) {
+        return new Response(JSON.stringify({ error: response.error }), {
+            status: response.status,
             headers: { "Content-Type": "application/json" },
         });
     }
-
-    const idToken = authHeader.split("Bearer ")[1];
-
     // Parse request body
     let addresses;
     try {

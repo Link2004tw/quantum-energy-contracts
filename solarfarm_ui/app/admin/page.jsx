@@ -4,12 +4,15 @@ import TransactionList from "./orders/TransactionList";
 import ClientPrimaryButton from "./ClientPrimaryButton";
 import EnergyTransactionsList from "./energy/EnergyTransactionsList";
 import { Transaction } from "@/models/transaction";
+import { getData } from "@/utils/adminDatabaseUtils";
+import EnergyTransaction from "@/models/energyTransaction";
 
 export default async function AdminPage() {
     let availableEnergy = "N/A";
     let transactions = [];
     let balance = "N/A";
     let paused = false;
+    let energyTransactions = [];
 
     try {
         availableEnergy = (await getAvailableEnergy()).toString(); // Convert BigNumber to string
@@ -19,6 +22,23 @@ export default async function AdminPage() {
     } catch (error) {
         console.error("Error fetching available energy:", error);
         availableEnergy = "Error fetching energy";
+    }
+    try {
+        const answer = await getData("/energyTransactions");
+        Object.keys(answer).map((tx) => {
+            energyTransactions.push(
+                new EnergyTransaction({
+                    energyAmountKwh: answer[tx].energyAmountKwh,
+                    transactionId: tx,
+                    timestamp: answer[tx].timestamp,
+                    reqHash: answer[tx].requestHash,
+                    conHash: answer[tx].confirmHash,
+                }).toJSON(),
+            );
+        });
+    } catch (error) {
+        console.error("Error fetching solar farm address:", error);
+        availableEnergy = "Error fetching solar farm address";
     }
 
     try {
@@ -42,7 +62,7 @@ export default async function AdminPage() {
             <div>Balance: {balance} eth</div>
             <ClientPrimaryButton paused={paused} />
             <TransactionList transactions={transactions} />
-            <EnergyTransactionsList />
+            <EnergyTransactionsList transactions={energyTransactions} />
         </>
     );
 }
