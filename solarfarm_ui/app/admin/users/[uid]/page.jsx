@@ -14,6 +14,7 @@ export default function DetailsPage() {
     const { uid } = useParams();
     const [currUser, setCurrUser] = useState(null);
     const [Authorized, setAuthorized] = useState(false);
+    const [csrf, setCsrf] = useState(null);
     let error = null;
 
     useEffect(() => {
@@ -26,6 +27,7 @@ export default function DetailsPage() {
                         Authorization: `Bearer ${user?.token}`,
                     },
                 });
+
                 if (!res.ok) {
                     error = "Failed to fetch user data.";
                     console.error("Error fetching user data:", res.statusText);
@@ -42,9 +44,28 @@ export default function DetailsPage() {
                     alert("User data not found.");
                     return;
                 }
+                const csrfTokenResponse = await fetch("/api/generate-token", {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${user?.token}`,
+                    },
+                });
+                if (!csrfTokenResponse.ok) {
+                    error = "Failed to fetch CSRF token.";
+                    console.error("Error fetching CSRF token:", csrfTokenResponse.statusText);
+                    return;
+                }
+                const csrfData = await csrfTokenResponse.json();
+                if (csrfData.error) {
+                    error = csrfData.error;
+                    console.error("Error fetching CSRF token:", csrfData.error);
+                    return;
+                }
+                setCsrf(csrfData.token);
                 //console.log(userData);
                 setCurrUser(userData);
-                setAuthorized(await checkIfAuthorizedAction(userData));
+                setAuthorized(await checkIfAuthorizedAction(userData, csrf));
             } else {
                 setUsers(null);
             }
@@ -63,7 +84,7 @@ export default function DetailsPage() {
                 await authorizeParty(address);
                 alert("Autherized Successfully");
             }
-            setAuthorized(await checkIfAuthorizedAction(currUser));
+            setAuthorized(await checkIfAuthorizedAction(currUser, csrf));
         } catch (error) {
             console.log(error);
         }

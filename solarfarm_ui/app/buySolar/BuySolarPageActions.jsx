@@ -211,10 +211,7 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
         }
 
         try {
-            // Check authorization
-            console.log("checking is authorized");
-
-            const isAuthorized = await checkIfAuthorizedAction({ ...user });
+            const isAuthorized = await checkIfAuthorizedAction(user.toJSON(), csrfToken);
 
             if (!isAuthorized) {
                 alert("You are not Authorized please wait till the admin authorizes your wallet");
@@ -247,10 +244,11 @@ export default function BuySolarPage({ initialEthPrice, initialAvailableEnergy, 
             const usdCost = gasCostForCommitmentUsd.usdAmount;
             const ethCost = gasCostForCommitmentUsd.ethAmount;
 
+            //1
             // Store commitment details with timestamp
             setPendingPurchase({
                 parsedAmount,
-                energyCostInEth,
+                priceEth: energyCostInEth,
                 commitTimestamp: Date.now(),
                 commitGasCostUsd: usdCost,
                 commitGasCostEth: ethCost,

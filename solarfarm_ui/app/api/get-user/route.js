@@ -16,7 +16,6 @@ import { validateAuthToken } from "../utils";
 export async function GET(req) {
     try {
         const authHeader = req.headers.get("authorization");
-        console.log("Auth header:", authHeader);
         const res = await validateAuthToken(authHeader);
 
         //console.log("Auth validation result:", res);

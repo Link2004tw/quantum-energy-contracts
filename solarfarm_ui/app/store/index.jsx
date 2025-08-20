@@ -22,19 +22,24 @@ export default function AuthWrapper({ children }) {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const uid = user.uid;
-                const userData = await getData(`users/${uid}`);
-
-                if (!userData) {
-                    //alert("User data not found.");
+                const token = await user.getIdToken();
+                const response = await fetch(`/api/get-user?uid=${uid}`, {
+                    method: "GET",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                if (!response.ok) {
+                    console.error("Failed to fetch user data:", response.statusText);
                     return;
                 }
-                const signer = new User({
-                    email: userData.email,
-                    username: userData.username,
-                    ethereumAddress: userData.ethereumAddress,
-                    uid: uid,
-                    energy: userData.energy,
-                });
+                const data = await response.json();
+                if (data.error || !data.success || !data.user) {
+                    console.error("Error fetching user data:", data.error);
+                    return;
+                }
+                const signer = new User({ ...data.user, uid: uid });
 
                 setUser(signer);
                 setIsLoggedIn(true);
