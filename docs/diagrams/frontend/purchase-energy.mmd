@@ -1,0 +1,26 @@
+sequenceDiagram
+    participant U as User
+    participant F as Frontend (/buySolar)
+    participant C as EnergyContract
+    participant FB as Firebase
+
+    U->>F: Attempts Purchase
+    F->>C: Checks authorizeParty(userAddress)
+    alt Unauthorized
+        C-->>F: Revert (Unauthorized)
+        F-->>U: Access Denied
+    else Authorized
+        U->>F: Clicks 'Estimate Costs'
+        F->>C: Calls estimateGasForRevealPurchase(amount, nonce)
+        C-->>F: Returns gasEstimate, gasCostInEth, totalCostInEth
+        F-->>U: Displays gas and total cost
+        U->>F: Clicks 'Commit Purchase'
+        F->>C: Calls commitPurchase(hash)
+        C-->>F: Transaction hash
+        F->>FB: Stores committed order (commitedOrders.js)
+        U->>F: Clicks 'Reveal Purchase' (within COMMIT_REVEAL_WINDOW)
+        F->>C: Calls revealPurchase(amount, nonce, {value})
+        C-->>F: Transaction confirmation
+        F->>FB: Updates transaction (transaction.js)
+        F-->>U: Success message
+    end

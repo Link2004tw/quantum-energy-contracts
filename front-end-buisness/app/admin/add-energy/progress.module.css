@@ -1,0 +1,21 @@
+.progress {
+  --size:100px;
+  width: var(--size);
+  aspect-ratio:1;
+  border-radius : 50%;
+  background: conic-gradient(#f00 var(--progress,0), #ccc 0);
+  display: grid;
+  place-content:center;
+}
+.progress:after{
+  width: calc(var(--size) * .8);
+  aspect-ratio:1;
+  content: attr(data-value);
+  display: grid;
+  background: #fff;
+  border-radius : 50%;
+  display: grid;
+  font-size: calc(var(--size) * .4);;
+  place-content:center;
+  font-family: arial;
+}
