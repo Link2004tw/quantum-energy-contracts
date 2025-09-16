@@ -1,0 +1,25 @@
+@import "tailwind";
+
+.container {
+  margin-top: 20px;
+  padding: 15px;
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #333;
+
+}
+
+.list {
+  list-style-type: none;
+  padding: 0;
+}
+
+.noTransactions {
+  color: #888;
+  font-style: italic;
+  font-size: 1rem;
+}
