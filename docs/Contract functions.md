@@ -1,10 +1,10 @@
 # Contract Functions Documentation for EnergyContract Application
 
-This document provides comprehensive documentation for the contract-related functions in the EnergyContract application, implemented in `adminContract.js`, `userContract.js`, and `contractUtils.js`. These functions interact with the `EnergyContract` smart contract deployed on the Sepolia testnet (or Hardhat for local testing) and are designed to be used in a Next.js application, typically called server-side within API routes or server actions. The functions enable functionalities such as adding energy, managing party authorizations, controlling contract state, processing energy purchases, and retrieving blockchain data. Each function is described with its purpose, parameters, return values, error conditions, and usage examples, tailored for frontend developers integrating these functions into server-side logic.
+This document provides comprehensive documentation for the contract-related functions in the EnergyContract application, implemented in `adminContract.js`, `userContract.js`, and `contractUtils.js`. These functions interact with the `EnergyContract` smart contract deployed on the Sepolia testnet (or Hardhat for local testing) and are designed to be used server-side within API routes or server actions in a Next.js application. The functions enable functionalities such as adding uranium, managing party authorizations, controlling contract state, processing uranium purchases, retrieving blockchain data, and managing uranium price updates. Each function is described with its purpose, parameters, return values, error conditions, and usage examples, tailored for frontend developers integrating these functions into server-side logic.
 
 ## Table of Contents
 
-- [[#addEnergy]]
+- [[#addUranium]]
 - [[#authorizeParty]]
 - [[#unauthorizeParty]]
 - [[#pauseContract]]
@@ -15,23 +15,27 @@ This document provides comprehensive documentation for the contract-related func
 - [[#checkContractConnection]]
 - [[#getSolarFarm]]
 - [[#getLatestEthPriceWC]]
-- [[#getAvailableEnergy]]
+- [[#getAvailableUranium]]
 - [[#checkIfAuthorized]]
 - [[#getEthBalance]]
 - [[#convertEthToUsd]]
 - [[#getCost]]
 - [[#getHashedCommitment]]
 - [[#getNonceFromUid]]
+- [[#requestUraniumPriceUpdate]]
+- [[#updateUraniumPrice]]
+- [[#getUraniumPriceInfo]]
+- [[#setUraniumPriceConsumer]]
 
-## addEnergy
+## addUranium
 
 ### Purpose and Use Cases
 
-Allows the contract owner (solar farm address) to add energy to the `EnergyContract` smart contract by calling `requestAddEnergy` and `confirmAddEnergy` with a 2-minute delay. Used by admins to increase the available energy (kWh) in the contract for purchase. Requires a signed transaction and ownership verification.
+Allows the contract owner (solar farm address) to add uranium to the `EnergyContract` smart contract by calling `requestAddUranium` and `confirmAddUranium` with a 2-minute delay. Used by admins to increase the available uranium (pounds) in the contract for purchase. Requires a signed transaction and ownership verification.
 
 ### Parameters
 
-- `kwh` (`number`): Amount of energy to add (1–1000 kWh).
+- `pounds` (`number`): Amount of uranium to add (1–100 pounds).
 
 ### Return Values
 
@@ -44,32 +48,34 @@ Allows the contract owner (solar farm address) to add energy to the `EnergyContr
     }
     ```
     
-- **Error**: Throws `Error` with a message describing the failure (e.g., "kWh must be between 1 and 1000", "Only the contract owner can add energy", or custom contract errors).
+- **Error**: Throws `Error` with a message describing the failure (e.g., "Pounds must be between 1 and 100", "Only the contract owner can add uranium", or custom contract errors).
+    
 
 ### Error Conditions
 
-- Throws `Error` if `kwh` is not a number, ≤ 0, or > 1000.
+- Throws `Error` if `pounds` is not a number, ≤ 0, or > 100 (`MAX_URANIUM_POUNDS_PER_PURCHASE`).
 - Throws `Error` if the signer address does not match the contract’s `solarFarm` address.
 - Throws custom errors from `handleContractError`, such as:
-    - `DelayNotElapsed`: If the 2-minute delay between `requestAddEnergy` and `confirmAddEnergy` is not respected.
+    - `InsufficientUraniumAvailable`: If `pounds` is zero or exceeds 100.
+    - `DelayNotElapsed`: If the 2-minute delay (`ADD_ENERGY_DELAY`) is not respected.
+    - `NoPendingRequest`: If no prior request exists.
     - `OwnableUnauthorizedAccount`: If the caller is not the contract owner.
-    - `ReentrancyGuardReentrantCall`: If a reentrancy attempt is detected.
     - `EnforcedPause`: If the contract is paused.
-- Throws `Error` for other transaction failures (e.g., insufficient funds, network issues).
+- Throws `Error` for transaction failures (e.g., insufficient funds, network issues).
 
 ### Usage Example
 
 ```javascript
-// Server-side: Add energy to the contract
-import { addEnergy } from './adminContract';
+// Server-side: Add uranium to the contract
+import { addUranium } from './adminContract';
 
-async function handleAddEnergy(kwh) {
+async function handleAddUranium(pounds) {
   try {
-    const result = await addEnergy(kwh);
+    const result = await addUranium(pounds);
     console.log(result); // { requestTxHash: "0x123...", confirmTxHash: "0x456..." }
     return result;
   } catch (error) {
-    console.error('Error adding energy:', error.message);
+    console.error('Error adding uranium:', error.message);
     throw error;
   }
 }
@@ -79,7 +85,7 @@ async function handleAddEnergy(kwh) {
 
 ### Purpose and Use Cases
 
-Authorizes an Ethereum address to interact with the `EnergyContract` by calling `authorizeParty`. Used by admins to grant users permission to purchase energy. Requires a signed transaction and admin privileges.
+Authorizes an Ethereum address to interact with the `EnergyContract` by calling `authorizeParty`. Used by admins to grant users permission to purchase uranium. Requires a signed transaction and admin privileges.
 
 ### Parameters
 
@@ -94,11 +100,12 @@ Authorizes an Ethereum address to interact with the `EnergyContract` by calling 
 
 - Throws `Error` if `address` is not a valid Ethereum address (checked via `ethers.isAddress`).
 - Throws custom errors from `handleContractError`, such as:
+    - `InvalidPartyAddress`: If `address` is the zero address.
     - `PartyAlreadyAuthorized`: If the address is already authorized.
-    - `MaxAuthorizedPartiesReached`: If the maximum number of authorized parties is reached.
+    - `MaxAuthorizedPartiesReached`: If the maximum number of authorized parties (100) is reached.
     - `OwnableUnauthorizedAccount`: If the caller is not the contract owner.
     - `EnforcedPause`: If the contract is paused.
-- Throws `Error` for other transaction failures (e.g., insufficient funds).
+- Throws `Error` for transaction failures (e.g., insufficient funds).
 
 ### Usage Example
 
@@ -137,10 +144,11 @@ Revokes authorization for an Ethereum address to interact with the `EnergyContra
 
 - Throws `Error` if `address` is not a valid Ethereum address.
 - Throws custom errors from `handleContractError`, such as:
+    - `PartyNotAuthorized`: If the address is not authorized.
     - `PartyNotFoundInList`: If the address is not in the authorized list.
     - `OwnableUnauthorizedAccount`: If the caller is not the contract owner.
     - `EnforcedPause`: If the contract is paused.
-- Throws `Error` for other transaction failures (e.g., insufficient funds).
+- Throws `Error` for transaction failures (e.g., insufficient funds).
 
 ### Usage Example
 
@@ -164,7 +172,7 @@ async function handleUnauthorizeParty(address) {
 
 ### Purpose and Use Cases
 
-Pauses the `EnergyContract` smart contract by calling `pause`, preventing most interactions (e.g., purchases, energy additions). Used by admins to temporarily halt contract operations for maintenance or emergency purposes. Requires a signed transaction and admin privileges.
+Pauses the `EnergyContract` smart contract by calling `pause`, preventing most interactions (e.g., purchases, uranium additions). Used by admins to temporarily halt contract operations for maintenance or emergency purposes. Requires a signed transaction and admin privileges.
 
 ### Parameters
 
@@ -180,7 +188,7 @@ Pauses the `EnergyContract` smart contract by calling `pause`, preventing most i
 - Throws custom errors from `handleContractError`, such as:
     - `OwnableUnauthorizedAccount`: If the caller is not the contract owner.
     - `EnforcedPause`: If the contract is already paused.
-- Throws `Error` for other transaction failures (e.g., insufficient funds).
+- Throws `Error` for transaction failures (e.g., insufficient funds).
 
 ### Usage Example
 
@@ -220,7 +228,7 @@ Unpauses the `EnergyContract` smart contract by calling `unpause`, restoring nor
 - Throws custom errors from `handleContractError`, such as:
     - `ExpectedPause`: If the contract is not paused.
     - `OwnableUnauthorizedAccount`: If the caller is not the contract owner.
-- Throws `Error` for other transaction failures (e.g., insufficient funds).
+- Throws `Error` for transaction failures (e.g., insufficient funds).
 
 ### Usage Example
 
@@ -244,7 +252,7 @@ async function handleUnpauseContract() {
 
 ### Purpose and Use Cases
 
-Fetches all energy purchase transactions recorded in the `EnergyContract` smart contract. Used by admins to audit or retrieve transaction history, including details like buyer address, kWh, price per kWh, ETH price, and timestamp. Requires admin privileges.
+Fetches all uranium purchase transactions recorded in the `EnergyContract` smart contract. Used by admins to audit or retrieve transaction history, including details like buyer address, uranium pounds, price per pound, ETH price, and timestamp. Requires admin privileges.
 
 ### Parameters
 
@@ -259,15 +267,17 @@ Fetches all energy purchase transactions recorded in the `EnergyContract` smart 
       {
         index: number,
         buyer: string,
-        kWh: string,
-        pricePerKWhUSD: string,
+        uraniumPounds: string,
+        pricePerPoundUSD: string,
         ethPriceUSD: string,
+        uraniumPriceUSD: string,
         timestamp: number
       }
     ]
     ```
     
 - **Error**: Throws `Error` with a message describing the failure (e.g., custom contract errors).
+    
 
 ### Error Conditions
 
@@ -289,9 +299,10 @@ async function handleGetTransactions() {
     //   {
     //     index: 0,
     //     buyer: "0x123...",
-    //     kWh: "100",
-    //     pricePerKWhUSD: "0.1",
+    //     uraniumPounds: "50",
+    //     pricePerPoundUSD: "1200",
     //     ethPriceUSD: "2000",
+    //     uraniumPriceUSD: "1200",
     //     timestamp: 1698768000000
     //   }
     // ]
@@ -307,38 +318,39 @@ async function handleGetTransactions() {
 
 ### Purpose and Use Cases
 
-Initiates a commitment to purchase energy from the `EnergyContract` by calling `commitPurchase` with a hashed commitment generated using `getHashedCommitment`. Used by authorized users to lock in a purchase intent. Requires a signed transaction and user authorization.
+Initiates a commitment to purchase uranium from the `EnergyContract` by calling `commitPurchase` with a hashed commitment generated using `getHashedCommitment`. Used by authorized users to lock in a purchase intent. Requires a signed transaction and user authorization.
 
 ### Parameters
 
-- `amount` (`number`): Amount of energy to commit (1–1000 kWh).
+- `amount` (`number`): Amount of uranium to commit (1–100 pounds).
 - `user` (`object`): User object with `_uid` (string) and `_ethereumAddress` (string).
+- `secret` (`string`): Secret string used in the commitment hash.
 
 ### Return Values
 
 - **Success**: `string` (transaction hash).
-- **Error**: Throws `Error` with a message describing the failure (e.g., "Amount cannot be bigger than 1000 kWh", or custom contract errors).
+- **Error**: Throws `Error` with a message describing the failure (e.g., "Amount cannot be bigger than 100 pounds", or custom contract errors).
 
 ### Error Conditions
 
-- Throws `Error` if `amount` is not a number, ≤ 0, or > 1000.
-- Throws `Error` if `user._uid` or `user._ethereumAddress` is missing or invalid.
+- Throws `Error` if `amount` is not a number, ≤ 0, or > 100.
+- Throws `Error` if `user._uid`, `user._ethereumAddress`, or `secret` is missing or invalid.
 - Throws custom errors from `handleContractError`, such as:
     - `PartyNotAuthorized`: If the user’s address is not authorized.
     - `CommitmentCooldownActive`: If a cooldown is active from a previous commitment.
     - `InvalidCommitmentHash`: If the generated hash is invalid.
     - `EnforcedPause`: If the contract is paused.
-- Throws `Error` for other transaction failures (e.g., insufficient funds).
+- Throws `Error` for transaction failures (e.g., insufficient funds).
 
 ### Usage Example
 
 ```javascript
-// Server-side: Commit to an energy purchase
+// Server-side: Commit to a uranium purchase
 import { commitPurchase } from './userContract';
 
-async function handleCommitPurchase(amount, user) {
+async function handleCommitPurchase(amount, user, secret) {
   try {
-    const txHash = await commitPurchase(amount, user);
+    const txHash = await commitPurchase(amount, user, secret);
     console.log(txHash); // "0x123..."
     return txHash;
   } catch (error) {
@@ -352,12 +364,13 @@ async function handleCommitPurchase(amount, user) {
 
 ### Purpose and Use Cases
 
-Completes an energy purchase by revealing the commitment details and sending payment via `revealPurchase`. Attempts to withdraw any pending refunds using `withdrawRefunds`. Used by authorized users to finalize energy purchases. Requires a signed transaction with sufficient ETH and user authorization.
+Completes a uranium purchase by revealing the commitment details and sending payment via `revealPurchase`. Attempts to withdraw any pending refunds using `withdrawRefunds`. Used by authorized users to finalize uranium purchases. Requires a signed transaction with sufficient ETH and user authorization.
 
 ### Parameters
 
-- `amount` (`number`): Amount of energy to purchase (1–1000 kWh).
+- `amount` (`number`): Amount of uranium to purchase (1–100 pounds).
 - `user` (`object`): User object with `_uid` (string) and `_ethereumAddress` (string).
+- `secret` (`string`): Secret string used in the commitment hash.
 
 ### Return Values
 
@@ -370,32 +383,35 @@ Completes an energy purchase by revealing the commitment details and sending pay
     }
     ```
     
-- **Error**: Throws `Error` with a message describing the failure (e.g., "Amount must be between 1 and 1000 kWh", or custom contract errors).
+- **Error**: Throws `Error` with a message describing the failure (e.g., "Amount must be between 1 and 100 pounds", or custom contract errors).
+    
 
 ### Error Conditions
 
-- Throws `Error` if `amount` is not a number, ≤ 0, or > 1000.
-- Throws `Error` if `user._uid` or `user._ethereumAddress` is missing or invalid.
+- Throws `Error` if `amount` is not a number, ≤ 0, or > 100.
+- Throws `Error` if `user._uid`, `user._ethereumAddress`, or `secret` is missing or invalid.
 - Throws `Error` if the signer address does not match `user._ethereumAddress`.
 - Throws custom errors from `handleContractError`, such as:
-    - `InsufficientEnergyAvailable`: If requested kWh exceeds available energy.
+    - `InsufficientUraniumAvailable`: If requested pounds exceed available uranium.
     - `PaymentAmountTooSmall`: If sent ETH is insufficient.
     - `CommitmentExpired`: If the commitment has expired.
     - `InvalidCommitment`: If commitment parameters don’t match the hash.
     - `PartyNotAuthorized`: If the user’s address is not authorized.
+    - `PriceFeedStale`: If the ETH price feed is stale.
+    - `InvalidEthPrice`: If no valid ETH price is available.
     - `EnforcedPause`: If the contract is paused.
     - `NoRefundsAvailable`: If no refunds are available during `withdrawRefunds`.
-- Throws `Error` for other transaction failures (e.g., insufficient funds).
+- Throws `Error` for transaction failures (e.g., insufficient funds).
 
 ### Usage Example
 
 ```javascript
-// Server-side: Reveal and complete an energy purchase
+// Server-side: Reveal and complete a uranium purchase
 import { revealPurchase } from './userContract';
 
-async function handleRevealPurchase(amount, user) {
+async function handleRevealPurchase(amount, user, secret) {
   try {
-    const result = await revealPurchase(amount, user);
+    const result = await revealPurchase(amount, user, secret);
     console.log(result); // { txHash: "0x123...", nonce: 12345 }
     return result;
   } catch (error) {
@@ -429,6 +445,7 @@ Verifies the connection to the `EnergyContract` smart contract, checking network
     ```
     
 - **Error**: Throws `Error` with a message describing the failure (e.g., "Wrong network", "No contract deployed").
+    
 
 ### Error Conditions
 
@@ -465,7 +482,7 @@ async function handleCheckContractConnection() {
 
 ### Purpose and Use Cases
 
-Retrieves the `solarFarm` address (contract owner) from the `EnergyContract` by calling `solarFarm`. Used to verify the owner address for admin operations, such as checking eligibility to add energy.
+Retrieves the `solarFarm` address (contract owner) from the `EnergyContract` by calling `solarFarm`. Used to verify the owner address for admin operations, such as checking eligibility to add uranium.
 
 ### Parameters
 
@@ -539,11 +556,11 @@ async function handleGetLatestEthPriceWC() {
 }
 ```
 
-## getAvailableEnergy
+## getAvailableUranium
 
 ### Purpose and Use Cases
 
-Fetches the available energy (kWh) in the `EnergyContract` using `availableKWh`. Used to display the current energy pool, helping users determine how much energy is available for purchase.
+Fetches the available uranium (pounds) in the `EnergyContract` using `getAvailableUranium`. Used to display the current uranium pool, helping users determine how much uranium is available for purchase.
 
 ### Parameters
 
@@ -551,7 +568,7 @@ Fetches the available energy (kWh) in the `EnergyContract` using `availableKWh`.
 
 ### Return Values
 
-- **Success**: `string` (available kWh).
+- **Success**: `string` (available pounds).
 - **Error**: Throws `Error` with a message describing the failure.
 
 ### Error Conditions
@@ -561,16 +578,16 @@ Fetches the available energy (kWh) in the `EnergyContract` using `availableKWh`.
 ### Usage Example
 
 ```javascript
-// Server-side: Fetch available energy
-import { getAvailableEnergy } from './contractUtils';
+// Server-side: Fetch available uranium
+import { getAvailableUranium } from './contractUtils';
 
-async function handleGetAvailableEnergy() {
+async function handleGetAvailableUranium() {
   try {
-    const availableKWh = await getAvailableEnergy();
-    console.log(availableKWh); // "1000"
-    return availableKWh;
+    const availablePounds = await getAvailableUranium();
+    console.log(availablePounds); // "100"
+    return availablePounds;
   } catch (error) {
-    console.error('Error fetching available energy:', error.message);
+    console.error('Error fetching available uranium:', error.message);
     throw error;
   }
 }
@@ -594,7 +611,7 @@ Checks if a user’s Ethereum address is authorized to interact with the `Energy
 ### Error Conditions
 
 - Throws `Error` if `user._uid` or `user._ethereumAddress` is missing or invalid.
-- Throws custom errors from `handleContractError`, such as `PartyNotAuthorized`.
+- Throws custom errors from `handleContractError`, such as `InvalidPartyAddress`.
 - Throws `Error` if the contract query fails.
 
 ### Usage Example
@@ -619,7 +636,7 @@ async function handleCheckIfAuthorized(user) {
 
 ### Purpose and Use Cases
 
-Fetches the Ethereum balance of a specified address using the provider’s `getBalance` method. Used to display a user’s ETH balance, ensuring they have sufficient funds for transactions like energy purchases.
+Fetches the Ethereum balance of a specified address using the provider’s `getBalance` method. Used to display a user’s ETH balance, ensuring they have sufficient funds for transactions like uranium purchases.
 
 ### Parameters
 
@@ -676,6 +693,7 @@ Converts an ETH amount to USD using the current ETH/USD price from `getLatestEth
     ```
     
 - **Error**: Throws `Error` with a message describing the failure (e.g., "ETH amount must be a valid number greater than zero").
+    
 
 ### Error Conditions
 
@@ -705,22 +723,24 @@ async function handleConvertEthToUsd(amount) {
 
 ### Purpose and Use Cases
 
-Calculates the required payment in ETH for purchasing a specified amount of energy using `calculateRequiredPayment`. Used to display the cost of an energy purchase before committing, helping users plan transactions.
+Calculates the required payment in ETH for purchasing a specified amount of uranium using `calculateRequiredPayment`. Used to display the cost of a uranium purchase before committing, helping users plan transactions.
 
 ### Parameters
 
-- `amount` (`number`): Amount of energy to purchase (1–1000 kWh).
+- `amount` (`number`): Amount of uranium to purchase (1–100 pounds).
 
 ### Return Values
 
 - **Success**: `string` (cost in ETH, formatted to 6 decimal places).
-- **Error**: Throws `Error` with a message describing the failure (e.g., "Energy amount must be a valid number greater than zero").
+- **Error**: Throws `Error` with a message describing the failure (e.g., "Uranium amount must be a valid number greater than zero").
 
 ### Error Conditions
 
-- Throws `Error` if `amount` is not a number, ≤ 0, or > 1000.
-- Throws custom errors from `handleContractError`, such as `PriceFeedStale` or `InvalidEthPrice`.
-- Throws `Error` if the cost calculation fails.
+- Throws `Error` if `amount` is not a number, ≤ 0, or > 100.
+- Throws custom errors from `handleContractError`, such as:
+    - `InsufficientUraniumAvailable`: If `amount` exceeds the maximum (100 pounds).
+    - `InvalidPriceBounds`: If the ETH price is outside 100–10,000 USD.
+- Throws `Error` if the cost calculation fails (e.g., network issues).
 
 ### Usage Example
 
@@ -744,7 +764,7 @@ async function handleGetCost(amount) {
 
 ### Purpose and Use Cases
 
-Checks if the `EnergyContract` is paused using `paused`. Used to determine if contract interactions (e.g., purchases, energy additions) are disabled, informing users before attempting actions.
+Checks if the `EnergyContract` is paused using `paused`. Used to determine if contract interactions (e.g., purchases, uranium additions) are disabled, informing users before attempting actions.
 
 ### Parameters
 
@@ -781,13 +801,14 @@ async function handleIsPaused() {
 
 ### Purpose and Use Cases
 
-Generates a hashed commitment for a purchase using `keccak256(abi.encodePacked(sender, kWh, nonce))`. Used within `commitPurchase` to create a commitment hash. Typically called server-side to ensure security.
+Generates a hashed commitment for a purchase using `keccak256(abi.encodePacked(msg.sender, pounds, nonce, secret))`. Used within `commitPurchase` to create a commitment hash. Typically called server-side to ensure security.
 
 ### Parameters
 
-- `kWh` (`number`): Amount of energy to commit.
+- `pounds` (`number`): Amount of uranium to commit.
 - `nonce` (`number`): Unique nonce for the commitment.
 - `sender` (`string`): Ethereum address of the sender.
+- `secret` (`string`): Secret string for the commitment.
 
 ### Return Values
 
@@ -797,8 +818,9 @@ Generates a hashed commitment for a purchase using `keccak256(abi.encodePacked(s
 ### Error Conditions
 
 - Throws `Error` if `sender` is not a valid Ethereum address (checked via `ethers.isAddress`).
-- Throws `Error` if `kWh` is not a positive integer.
+- Throws `Error` if `pounds` is not a positive integer.
 - Throws `Error` if `nonce` is not an integer.
+- Throws `Error` if `secret` is not a valid string.
 
 ### Usage Example
 
@@ -806,9 +828,9 @@ Generates a hashed commitment for a purchase using `keccak256(abi.encodePacked(s
 // Server-side: Generate a commitment hash
 import { getHashedCommitment } from './contractUtils';
 
-function handleGetHashedCommitment(kWh, nonce, sender) {
+function handleGetHashedCommitment(pounds, nonce, sender, secret) {
   try {
-    const hash = getHashedCommitment(kWh, nonce, sender);
+    const hash = getHashedCommitment(pounds, nonce, sender, secret);
     console.log(hash); // "0xabcdef..."
     return hash;
   } catch (error) {
@@ -850,6 +872,176 @@ function handleGetNonceFromUid(uid) {
     return nonce;
   } catch (error) {
     console.error('Error generating nonce:', error.message);
+    throw error;
+  }
+}
+```
+
+## requestUraniumPriceUpdate
+
+### Purpose and Use Cases
+
+Requests an update to the uranium price from the `uraniumPriceConsumer` oracle by calling `requestUraniumPriceUpdate`. Used by admins to refresh the uranium price feed. Requires a signed transaction and admin privileges.
+
+### Parameters
+
+- None.
+
+### Return Values
+
+- **Success**: `string` (transaction hash).
+- **Error**: Throws `Error` with a message describing the failure (e.g., custom contract errors).
+
+### Error Conditions
+
+- Throws custom errors from `handleContractError`, such as:
+    - `UraniumPriceConsumerNotSet`: If the uranium price consumer address is not set.
+    - `OwnableUnauthorizedAccount`: If the caller is not the contract owner.
+    - `EnforcedPause`: If the contract is paused.
+- Throws `Error` for transaction failures (e.g., insufficient funds).
+
+### Usage Example
+
+```javascript
+// Server-side: Request uranium price update
+import { requestUraniumPriceUpdate } from './adminContract';
+
+async function handleRequestUraniumPriceUpdate() {
+  try {
+    const txHash = await requestUraniumPriceUpdate();
+    console.log(txHash); // "0x123..."
+    return txHash;
+  } catch (error) {
+    console.error('Error requesting uranium price update:', error.message);
+    throw error;
+  }
+}
+```
+
+## updateUraniumPrice
+
+### Purpose and Use Cases
+
+Updates the stored uranium price in the `EnergyContract` by calling `updateUraniumPrice`. Used by admins to finalize a price update after a request. Requires a signed transaction.
+
+### Parameters
+
+- None.
+
+### Return Values
+
+- **Success**: `string` (transaction hash).
+- **Error**: Throws `Error` with a message describing the failure (e.g., custom contract errors).
+
+### Error Conditions
+
+- Throws `Error` if the new price is zero or unchanged (contract logic).
+- Throws custom errors from `handleContractError`, such as `EnforcedPause` if the contract is paused.
+- Throws `Error` for transaction failures (e.g., network issues).
+
+### Usage Example
+
+```javascript
+// Server-side: Update uranium price
+import { updateUraniumPrice } from './adminContract';
+
+async function handleUpdateUraniumPrice() {
+  try {
+    const txHash = await updateUraniumPrice();
+    console.log(txHash); // "0x123..."
+    return txHash;
+  } catch (error) {
+    console.error('Error updating uranium price:', error.message);
+    throw error;
+  }
+}
+```
+
+## getUraniumPriceInfo
+
+### Purpose and Use Cases
+
+Fetches the current uranium price and its last update timestamp from the `EnergyContract` using `getUraniumPriceInfo`. Used to display the uranium price (USD cents per pound) and its freshness to users or admins.
+
+### Parameters
+
+- None.
+
+### Return Values
+
+- **Success**:
+    
+    ```json
+    {
+      price: string,
+      lastUpdated: number
+    }
+    ```
+    
+- **Error**: Throws `Error` with a message describing the failure.
+    
+
+### Error Conditions
+
+- Throws `Error` if the contract query fails (e.g., network issues, invalid contract address).
+
+### Usage Example
+
+```javascript
+// Server-side: Fetch uranium price info
+import { getUraniumPriceInfo } from './contractUtils';
+
+async function handleGetUraniumPriceInfo() {
+  try {
+    const info = await getUraniumPriceInfo();
+    console.log(info); // { price: "1200", lastUpdated: 1698768000000 }
+    return info;
+  } catch (error) {
+    console.error('Error fetching uranium price info:', error.message);
+    throw error;
+  }
+}
+```
+
+## setUraniumPriceConsumer
+
+### Purpose and Use Cases
+
+Sets the uranium price consumer contract address and Chainlink parameters by calling `setUraniumPriceConsumer`. Used by admins to configure or update the uranium price oracle. Requires a signed transaction and admin privileges.
+
+### Parameters
+
+- `consumerAddress` (`string`): Address of the uranium price consumer contract.
+- `subscriptionId` (`number`): Chainlink subscription ID.
+- `donId` (`string`): Chainlink DON ID (as a hex string).
+
+### Return Values
+
+- **Success**: `string` (transaction hash).
+- **Error**: Throws `Error` with a message describing the failure (e.g., "Invalid consumer address", or custom contract errors).
+
+### Error Conditions
+
+- Throws `Error` if `consumerAddress` is not a valid Ethereum address.
+- Throws `Error` if `subscriptionId` is not a number or `donId` is not a valid hex string.
+- Throws custom errors from `handleContractError`, such as:
+    - `InvalidPartyAddress`: If `consumerAddress` is the zero address.
+    - `OwnableUnauthorizedAccount`: If the caller is not the contract owner.
+- Throws `Error` for transaction failures (e.g., insufficient funds).
+
+### Usage Example
+
+```javascript
+// Server-side: Set uranium price consumer
+import { setUraniumPriceConsumer } from './adminContract';
+
+async function handleSetUraniumPriceConsumer(consumerAddress, subscriptionId, donId) {
+  try {
+    const txHash = await setUraniumPriceConsumer(consumerAddress, subscriptionId, donId);
+    console.log(txHash); // "0x123..."
+    return txHash;
+  } catch (error) {
+    console.error('Error setting uranium price consumer:', error.message);
     throw error;
   }
 }
